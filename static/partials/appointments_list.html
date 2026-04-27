@@ -1,0 +1,25 @@
+{% if appointments %}
+    {% for appt in appointments %}
+    <div class="appt-card">
+        <div class="appt-info">
+            <h3>{{ appt.title }}</h3>
+            <p>📅 {{ appt.scheduled_at }} &nbsp;|&nbsp; 📍 {{ appt.location or 'TBD' }}</p>
+            <p>🔖 {{ appt.reference }} &nbsp;|&nbsp; 👨‍⚕️ {{ appt.doctor_name or 'TBD' }}</p>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
+            <span class="badge {{ appt.status }}">{{ appt.status }}</span>
+            {% if appt.status == 'scheduled' %}
+            <button class="cancel-btn"
+                    hx-post="/appointments/cancel"
+                    hx-vals='{"appointment_id": "{{ appt.id }}"}'
+                    hx-target="body"
+                    hx-swap="innerHTML">
+                Cancel
+            </button>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <p class="empty">No appointments found. Ask the chatbot to schedule one!</p>
+{% endif %}

@@ -1,0 +1,37 @@
+<!-- User bubble -->
+<div class="bubble user">{{ user_message }}</div>
+
+<!-- Assistant bubble -->
+<div class="bubble assistant">
+    {{ reply | replace('\n', '<br>') | safe }}
+
+    {% if follow_up_questions %}
+    <div class="follow-ups">
+        {% for q in follow_up_questions %}
+        <button class="quick-reply">{{ q }}</button>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if probable_conditions %}
+    <div class="conditions">
+        <strong>Probable conditions:</strong><br/>
+        {% for c in probable_conditions %}
+            {% if c.name is defined %}
+            • {{ c.name }} ({{ (c.confidence * 100) | int }}%) — {{ c.recommendation }}<br/>
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if appointment_created %}
+    <div class="appt-card">
+        ✅ <strong>{{ appointment_created.title }}</strong><br/>
+        📅 {{ appointment_created.scheduled_at }}<br/>
+        📍 {{ appointment_created.location or 'TBD' }}<br/>
+        🔖 Ref: {{ appointment_created.reference }}
+    </div>
+    {% endif %}
+</div>
+
+<script>scrollToBottom();</script>
