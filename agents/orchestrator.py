@@ -21,15 +21,13 @@ from agents.gemini_client import (
     extract_scheduling_details,        # new ADK-based helper
 )
 from session import session_service, InMemorySession
+from services.chat_service import chat_service
 from services.appointment_service import AppointmentService
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-# ─────────────────────────────────────────────
-# Sub-Agents
-# ─────────────────────────────────────────────
 
 class SymptomAgent:
     """
@@ -56,9 +54,8 @@ class SymptomAgent:
         probable_conditions: list[dict] = []
 
         if stage < 3:
-            # ADK symptom_collector agent generates follow-up questions
             follow_ups = await generate_follow_up_questions(
-                symptoms, session.language, stage
+                symptoms, stage
             )
             reply = (
                 f"{follow_ups[0]}\n\n{follow_ups[1]}"
@@ -67,13 +64,12 @@ class SymptomAgent:
             )
             state["triage_stage"] = stage + 1
         else:
-            # ADK diagnosis_analyser agent produces conditions
             user_profile = {
                 "age": state.get("user_age"),
                 "conditions": state.get("existing_conditions", []),
             }
             probable_conditions = await analyse_probable_conditions(
-                symptoms, answers, user_profile, session.language
+                symptoms, answers, user_profile
             )
             conditions_text = "\n".join(
                 f"- {c['name']} ({int(c['confidence'] * 100)}%): {c['recommendation']}"
@@ -83,7 +79,7 @@ class SymptomAgent:
             reply = (
                 f"Based on what you've described, here are probable conditions:\n\n"
                 f"{conditions_text}\n\n"
-                f"⚠️ This is not a medical diagnosis. Please consult a qualified doctor."
+                f"This is not a medical diagnosis. Please consult a qualified doctor."
             )
             state["triage_stage"] = 0
             ctx["last_conditions"] = probable_conditions
@@ -108,15 +104,23 @@ class SchedulingAgent:
         self._appt_service = AppointmentService()
 
     async def run(self, session: InMemorySession, user_message: str) -> dict:
-        # ADK scheduling_extractor agent parses natural language → structured dict
         details = await extract_scheduling_details(user_message)
-
         missing = [k for k, v in details.items() if v is None and k != "doctor_name"]
-        if missing or not details.get("date_hint"):
+        if missing and not details.get("title"):
             return {
                 "reply": (
                     "I'd be happy to schedule that! "
                     "Could you please provide the preferred date and time?"
+                ),
+                "intent": "scheduling",
+                "appointment_created": None,
+            }
+
+        if not details.get("date_hint"):
+            return {
+                "reply": (
+                    "I'd be happy to schedule that! "
+                    "Please tell me the exact date and time for the appointment."
                 ),
                 "intent": "scheduling",
                 "appointment_created": None,
@@ -132,10 +136,10 @@ class SchedulingAgent:
         )
 
         reply = (
-            f"✅ Appointment scheduled!\n"
-            f"📅 {appt['title']} on {appt['scheduled_at']}\n"
-            f"📍 {appt.get('location', 'TBD')}\n"
-            f"🔖 Reference: {appt['reference']}\n\n"
+            f"Appointment scheduled!\n"
+            f"{appt['title']} on {appt['scheduled_at']}\n"
+            f"{appt.get('location', 'TBD')}\n"
+            f"Reference: {appt['reference']}\n\n"
             f"You'll receive an SMS reminder before your appointment."
         )
 
@@ -154,7 +158,7 @@ class GeneralHealthAgent:
 
     async def run(self, session: InMemorySession, user_message: str) -> dict:
         context = await session_service.build_gemini_context(session.session_id)
-        reply = await generate_response(context, user_message, session.language)
+        reply = await generate_response(context, user_message)
         return {
             "reply": reply,
             "intent": "general_health",
@@ -181,7 +185,6 @@ class OrchestratorAgent:
       7. Return result dict to chat router
     """
 
-    # Off-topic reply localised to supported languages
     _OFF_TOPIC: dict[str, str] = {
         "en": "I can only assist with health-related queries. How can I help with your health today?",
         "hi": "मैं केवल स्वास्थ्य संबंधी प्रश्नों में मदद कर सकता हूँ।",
@@ -202,11 +205,10 @@ class OrchestratorAgent:
         user_id: str,
         message: str,
         session_id: str | None = None,
-        language: str = "en",
     ) -> dict:
         # 1. Session
         session = await session_service.get_or_create_session(
-            session_id, user_id, language
+            session_id, user_id
         )
 
         # 2. Intent classification (ADK intent_classifier agent)
@@ -216,9 +218,12 @@ class OrchestratorAgent:
 
         # 3. Health guardrail
         if not is_health:
-            reply_text = self._OFF_TOPIC.get(language, self._OFF_TOPIC["en"])
+            lang = classification.get("language", "en")
+            reply_text = self._OFF_TOPIC.get(lang, self._OFF_TOPIC["en"])
             await session_service.add_message(session.session_id, "user", message)
+            await chat_service.save_message(session.session_id, session.user_id, "user", message, metadata={"intent": "off_topic"})
             await session_service.add_message(session.session_id, "assistant", reply_text)
+            await chat_service.save_message(session.session_id, session.user_id, "assistant", reply_text, metadata={"intent": "off_topic"})
             return {
                 "reply": reply_text,
                 "session_id": session.session_id,
@@ -228,8 +233,9 @@ class OrchestratorAgent:
         # 4. Persist user message
         await session_service.add_message(
             session.session_id, "user", message,
-            metadata={"intent": intent, "language": language},
+            metadata={"intent": intent},
         )
+        await chat_service.save_message(session.session_id, session.user_id, "user", message, metadata={"intent": intent })
 
         # 5. Route to correct sub-agent
         if intent == "symptom_query":
@@ -244,10 +250,10 @@ class OrchestratorAgent:
             session.session_id, "assistant", result["reply"],
             metadata={"intent": intent},
         )
+        await chat_service.save_message(session.session_id, session.user_id, "assistant", result["reply"], metadata={"intent": intent})
 
         result["session_id"] = session.session_id
         return result
 
 
-# ── Singleton ──────────────────────────────────────────────
 orchestrator = OrchestratorAgent()

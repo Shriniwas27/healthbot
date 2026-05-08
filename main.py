@@ -8,6 +8,9 @@ import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,11 +27,8 @@ from utils.logger import get_logger
 # ── Import ADK agents ──────────────────────────────────────
 from agents.gemini_client import (
     intent_classifier_agent,
-    symptom_agent_llm,
-    diagnosis_agent_llm,
-    general_health_agent_llm,
+    health_agent_llm,
     summary_agent_llm,
-    scheduling_extractor_agent,
     _adk_session_service,
 )
 
@@ -60,17 +60,14 @@ async def lifespan(app: FastAPI):
     await connect_db()
 
     # Store ADK agents in app.state
-    app.state.intent_classifier_agent    = intent_classifier_agent
-    app.state.symptom_agent_llm          = symptom_agent_llm
-    app.state.diagnosis_agent_llm        = diagnosis_agent_llm
-    app.state.general_health_agent_llm   = general_health_agent_llm
-    app.state.summary_agent_llm          = summary_agent_llm
-    app.state.scheduling_extractor_agent = scheduling_extractor_agent
-    app.state.adk_session_service        = _adk_session_service
+    app.state.intent_classifier_agent = intent_classifier_agent
+    app.state.health_agent_llm = health_agent_llm
+    app.state.summary_agent_llm = summary_agent_llm
+    app.state.adk_session_service = _adk_session_service
 
     logger.info(f"ADK SESSION SERVICE ID: {id(app.state.adk_session_service)}")
 
-    scheduler.add_job(_run_reminders,    "interval", minutes=15, id="reminders")
+    scheduler.add_job(_run_reminders,    "interval", minutes=1, id="reminders")
     scheduler.add_job(_cleanup_sessions, "interval", minutes=10, id="session_cleanup")
     scheduler.start()
     logger.info("APScheduler started")
@@ -108,12 +105,35 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# ── Routers ────────────────────────────────────────────────
-app.include_router(auth_router)     # /register, /login, /logout
-app.include_router(chat_router)     # /, /chat, /appointments, /webhooks
+
+app.include_router(auth_router)    
+app.include_router(chat_router)     
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    try:
+        body = await request.json()
+    except Exception:
+        raw = await request.body()
+        body = raw.decode('utf-8', errors='replace')
+
+    # Sanitize exc.errors() so any bytes are converted to strings and JSON serializable
+    errors = []
+    for err in exc.errors():
+        err_copy = dict(err)
+        if 'input' in err_copy and isinstance(err_copy['input'], (bytes, bytearray)):
+            try:
+                err_copy['input'] = err_copy['input'].decode('utf-8', errors='replace')
+            except Exception:
+                err_copy['input'] = repr(err_copy['input'])
+        errors.append(err_copy)
+
+    logger.error("Request validation error for %s %s: %s — body=%s",
+                 request.method, request.url.path, errors, body)
+
+    return JSONResponse(status_code=422, content=jsonable_encoder({"detail": errors, "body": body}))
 
 
-# ── Health Check ───────────────────────────────────────────
 
 @app.get("/health")
 async def health_check():
@@ -132,7 +152,6 @@ async def health_check():
     }
 
 
-# ── Dev Entry Point ────────────────────────────────────────
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,31 +1,566 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>My Appointments</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Appointments - Health Assistant</title>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: system-ui, sans-serif; background: #f0f4f8; padding: 2rem; }
-        h1 { color: #1a73e8; margin-bottom: 1.5rem; }
-        .appt-card { background: white; border-radius: 0.75rem; padding: 1rem 1.25rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
-        .appt-info h3 { font-size: 1rem; color: #1a1a1a; }
-        .appt-info p  { font-size: 0.85rem; color: #555; margin-top: 0.25rem; }
-        .badge { padding: 0.25rem 0.6rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 600; }
-        .badge.scheduled  { background: #e8f0fe; color: #1a73e8; }
-        .badge.confirmed  { background: #e6f4ea; color: #34a853; }
-        .badge.cancelled  { background: #fce8e6; color: #d93025; }
-        .badge.completed  { background: #f1f3f4; color: #5f6368; }
-        button.cancel-btn { background: #fce8e6; color: #d93025; border: none; padding: 0.4rem 0.8rem; border-radius: 0.5rem; cursor: pointer; font-size: 0.85rem; }
-        .empty { color: #888; text-align: center; margin-top: 3rem; }
-        a.back { display: inline-block; margin-bottom: 1.5rem; color: #1a73e8; text-decoration: none; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --sidebar-bg:      #ffffff;
+            --sidebar-hover:   #f4f6f8;
+            --sidebar-active:  #eef1f5;
+            --sidebar-border:  #e8eaee;
+            --sidebar-text:    #6b7280;
+            --sidebar-text-hi: #111827;
+
+            --main-bg:         #f7f5f2;
+            --card-bg:         #ffffff;
+            --card-border:     #e4e0da;
+
+            --text:            #1a1f2e;
+            --text-2:          #4a5168;
+            --muted:           #8b92a5;
+
+            --accent:          #4a7c59;
+            --accent-light:    #5a9469;
+            --accent-bg:       rgba(74,124,89,0.08);
+
+            --success:         #4a7c59;
+            --success-bg:      rgba(74,124,89,0.08);
+            --warning:         #b45309;
+            --warning-bg:      rgba(180,83,9,0.08);
+            --danger:          #dc2626;
+            --danger-bg:       rgba(220,38,38,0.08);
+            --info:            #6366f1;
+            --info-bg:         rgba(99,102,241,0.08);
+
+            --radius:          14px;
+            --radius-sm:       8px;
+            --shadow:          0 2px 12px rgba(0,0,0,0.06);
+            --shadow-md:       0 4px 24px rgba(0,0,0,0.08);
+            --transition:      all 0.2s cubic-bezier(0.4,0,0.2,1);
+        }
+
+        body {
+            font-family: 'Sora', system-ui, sans-serif;
+            background: var(--main-bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+       
+        .sidebar {
+            width: 270px;
+            flex-shrink: 0;
+            background: var(--sidebar-bg);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            border-right: 1px solid var(--sidebar-border);
+            transition: width 0.28s cubic-bezier(0.4,0,0.2,1);
+            overflow: hidden;
+        }
+
+        .sidebar.collapsed { width: 64px; min-width: 64px; }
+
+        .sidebar.collapsed .logo-info,
+        .sidebar.collapsed .new-chat-kbd,
+        .sidebar.collapsed .nav-item-label,
+        .sidebar.collapsed .user-info,
+        .sidebar.collapsed #chat-history-list {
+            opacity: 0; pointer-events: none; width: 0; overflow: hidden; white-space: nowrap;
+        }
+
+        .sidebar.collapsed .new-chat-btn { display: none; }
+        .sidebar.collapsed .logo-icon { display: none; }
+        .sidebar.collapsed .sidebar-logo { justify-content: center; padding: 1.1rem 0; }
+        .sidebar.collapsed .sidebar-toggle { margin-left: 0; }
+        .sidebar.collapsed .nav-item { justify-content: center; padding: 0.55rem; }
+        .sidebar.collapsed .sidebar-user { justify-content: center; padding: 0.85rem 0; }
+
+        .sidebar-logo {
+            display: flex; align-items: center; gap: 0.6rem;
+            padding: 1.25rem 1rem 1rem;
+            border-bottom: 1px solid var(--sidebar-border);
+        }
+
+        .logo-icon {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; flex-shrink: 0;
+        }
+
+        .logo-info { flex: 1; min-width: 0; }
+        .logo-name {
+            font-size: 0.95rem; font-weight: 700;
+            color: var(--sidebar-text-hi); letter-spacing: -0.02em;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .logo-plan { font-size: 0.68rem; color: var(--sidebar-text); }
+
+        .sidebar-toggle {
+            margin-left: auto; width: 28px; height: 28px;
+            border-radius: 6px; border: none; background: transparent;
+            color: var(--sidebar-text); cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s, color 0.2s, transform 0.28s cubic-bezier(0.4,0,0.2,1);
+            flex-shrink: 0;
+        }
+        .sidebar-toggle:hover { background: var(--sidebar-hover); color: var(--sidebar-text-hi); }
+
+        /* Reopen button */
+        .sidebar-reopen {
+            display: none; align-items: center; justify-content: center;
+            padding: 0.6rem 0; border-bottom: 1px solid var(--sidebar-border);
+        }
+        .sidebar.collapsed .sidebar-reopen { display: flex; }
+
+        .reopen-btn {
+            width: 34px; height: 34px; border-radius: var(--radius-sm);
+            border: 1px solid var(--sidebar-border); background: var(--sidebar-hover);
+            color: var(--sidebar-text); cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: var(--transition);
+        }
+        .reopen-btn:hover { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+
+        /* New Chat */
+        .new-chat-btn {
+            display: flex; align-items: center; gap: 0.5rem;
+            margin: 0.85rem 0.75rem; padding: 0.6rem 0.85rem;
+            background: var(--sidebar-hover); border: 1px solid var(--sidebar-border);
+            border-radius: var(--radius-sm); color: var(--sidebar-text-hi);
+            font-family: 'Sora', sans-serif; font-size: 0.85rem; font-weight: 600;
+            cursor: pointer; transition: var(--transition); text-decoration: none;
+            justify-content: space-between;
+        }
+        .new-chat-btn:hover { background: #eaecf0; border-color: #d1d5db; }
+        .new-chat-left { display: flex; align-items: center; gap: 0.5rem; }
+        .new-chat-kbd {
+            font-size: 0.65rem; color: var(--sidebar-text);
+            background: rgba(0,0,0,0.06); padding: 0.15rem 0.4rem;
+            border-radius: 4px; font-family: monospace;
+        }
+
+        /* Nav */
+        .sidebar-nav { flex: 1; padding: 0.25rem 0.5rem; overflow-y: auto; overflow-x: hidden; }
+        .sidebar-nav::-webkit-scrollbar { width: 4px; }
+        .sidebar-nav::-webkit-scrollbar-thumb { background: var(--sidebar-border); border-radius: 4px; }
+
+        .nav-item {
+            display: flex; align-items: center; gap: 0.65rem;
+            padding: 0.55rem 0.75rem; border-radius: var(--radius-sm);
+            color: var(--sidebar-text); text-decoration: none;
+            font-size: 0.875rem; font-weight: 500;
+            transition: var(--transition); cursor: pointer;
+            border: none; background: none; width: 100%;
+            text-align: left; white-space: nowrap; margin-bottom: 0.1rem;
+        }
+        .nav-item:hover  { background: var(--sidebar-hover); color: var(--sidebar-text-hi); }
+        .nav-item.active { background: var(--sidebar-active); color: var(--sidebar-text-hi); }
+
+        .nav-icon { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.7; }
+        .nav-item.active .nav-icon, .nav-item:hover .nav-icon { opacity: 1; }
+
+        .nav-item-label { transition: opacity 0.2s, width 0.28s; white-space: nowrap; }
+
+        /* User */
+        .sidebar-user {
+            display: flex; align-items: center; gap: 0.6rem;
+            padding: 0.85rem 1rem; border-top: 1px solid var(--sidebar-border);
+            cursor: pointer; transition: var(--transition);
+        }
+        .sidebar-user:hover { background: var(--sidebar-hover); }
+
+        .user-avatar {
+            width: 34px; height: 34px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), #5a9469);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.85rem; font-weight: 700; color: white; flex-shrink: 0;
+        }
+        .user-info { flex: 1; min-width: 0; }
+        .user-name {
+            font-size: 0.82rem; font-weight: 600; color: var(--sidebar-text-hi);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .user-email {
+            font-size: 0.68rem; color: var(--sidebar-text);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        /* ══════════════ MAIN ══════════════ */
+        .main {
+            flex: 1; display: flex; flex-direction: column;
+            height: 100vh; overflow: hidden;
+        }
+
+        .topbar {
+            display: flex; align-items: center; justify-content: flex-end;
+            padding: 0.85rem 1.75rem; gap: 0.5rem; flex-shrink: 0;
+        }
+
+        .topbar-btn {
+            display: flex; align-items: center; gap: 0.4rem;
+            padding: 0.45rem 0.9rem; border-radius: var(--radius-sm);
+            border: 1px solid var(--card-border); background: var(--card-bg);
+            color: var(--text-2); font-family: 'Sora', sans-serif;
+            font-size: 0.8rem; font-weight: 500; cursor: pointer;
+            transition: var(--transition); text-decoration: none; box-shadow: var(--shadow);
+        }
+        .topbar-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+
+        /* Page content */
+        .page-content {
+            flex: 1; overflow-y: auto;
+            padding: 2.5rem 3.5rem 3rem;
+            animation: fadeUp 0.45s 0.05s ease both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .page-content::-webkit-scrollbar { width: 6px; }
+        .page-content::-webkit-scrollbar-thumb { background: #d5d0ca; border-radius: 4px; }
+
+        /* Page header */
+        .page-header {
+            margin-bottom: 2rem;
+        }
+        .page-header h1 {
+            font-size: 2rem; font-weight: 800;
+            letter-spacing: -0.035em; color: var(--text); line-height: 1.15;
+        }
+        .page-header p {
+            font-size: 0.925rem; color: var(--text-2);
+            margin-top: 0.35rem; font-weight: 400;
+        }
+
+        /* Stats */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.85rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1.5px solid var(--card-border);
+            border-radius: var(--radius);
+            padding: 1.25rem 1.1rem;
+            box-shadow: var(--shadow);
+            text-align: center;
+            transition: var(--transition);
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+        .stat-number {
+            font-size: 1.9rem; font-weight: 800;
+            letter-spacing: -0.04em; color: var(--accent);
+            line-height: 1;
+            margin-bottom: 0.35rem;
+        }
+        .stat-label {
+            font-size: 0.78rem; color: var(--muted);
+            font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em;
+        }
+
+        /* Section header */
+        .section-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+        .section-title { font-size: 0.9rem; font-weight: 700; color: var(--text); }
+
+        .new-appt-btn {
+            display: flex; align-items: center; gap: 0.4rem;
+            padding: 0.45rem 0.9rem; border-radius: var(--radius-sm);
+            border: 1.5px solid var(--accent); background: var(--accent);
+            color: white; font-family: 'Sora', sans-serif;
+            font-size: 0.8rem; font-weight: 600; cursor: pointer;
+            transition: var(--transition); text-decoration: none;
+            box-shadow: 0 2px 10px rgba(74,124,89,0.25);
+        }
+        .new-appt-btn:hover { background: var(--accent-light); border-color: var(--accent-light); transform: translateY(-1px); }
+
+        /* Appointments grid */
+        .appointments-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 1rem;
+        }
+
+        .appt-card {
+            background: var(--card-bg);
+            border: 1.5px solid var(--card-border);
+            border-radius: var(--radius);
+            padding: 1.35rem;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        .appt-card::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 4px;
+            background: var(--accent);
+            border-radius: 0;
+        }
+        .appt-card.status-cancelled::before { background: var(--danger); }
+        .appt-card.status-completed::before { background: var(--info); }
+        .appt-card.status-confirmed::before { background: var(--success); }
+
+        .appt-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+            border-color: #d0ccc5;
+        }
+
+        .appt-header {
+            display: flex; justify-content: space-between;
+            align-items: flex-start; margin-bottom: 1rem;
+        }
+
+        .appt-title {
+            font-size: 1rem; font-weight: 700;
+            color: var(--text); line-height: 1.3;
+        }
+
+        .appt-status {
+            padding: 0.25rem 0.7rem; border-radius: 20px;
+            font-size: 0.72rem; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.04em;
+            flex-shrink: 0; margin-left: 0.5rem;
+        }
+        .badge-scheduled  { background: var(--accent-bg);  color: var(--accent); }
+        .badge-confirmed  { background: var(--success-bg); color: var(--success); }
+        .badge-cancelled  { background: var(--danger-bg);  color: var(--danger); }
+        .badge-completed  { background: var(--info-bg);    color: var(--info); }
+
+        .appt-details {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 0.45rem 1.5rem; font-size: 0.85rem;
+            margin-bottom: 1rem;
+        }
+
+        .detail-row { display: flex; flex-direction: column; gap: 0.1rem; }
+        .detail-label { color: var(--muted); font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+        .detail-value { color: var(--text); font-weight: 500; }
+
+        .appt-actions { display: flex; gap: 0.6rem; padding-top: 0.75rem; border-top: 1px solid var(--card-border); }
+
+        .btn {
+            padding: 0.4rem 0.85rem; border-radius: var(--radius-sm);
+            font-weight: 600; font-family: 'Sora', sans-serif;
+            text-decoration: none; display: inline-flex;
+            align-items: center; gap: 0.4rem;
+            transition: var(--transition); border: 1.5px solid transparent;
+            cursor: pointer; font-size: 0.78rem;
+        }
+        .btn-primary {
+            background: var(--accent); color: white;
+            border-color: var(--accent);
+            box-shadow: 0 2px 8px rgba(74,124,89,0.25);
+        }
+        .btn-primary:hover { background: var(--accent-light); border-color: var(--accent-light); }
+
+        .btn-outline {
+            background: transparent; color: var(--text-2);
+            border-color: var(--card-border);
+        }
+        .btn-outline:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+
+        .btn-danger {
+            background: transparent; color: var(--danger);
+            border-color: rgba(220,38,38,0.25);
+        }
+        .btn-danger:hover { background: var(--danger-bg); border-color: var(--danger); }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center; padding: 4rem 2rem;
+            color: var(--muted);
+        }
+        .empty-icon { font-size: 3.5rem; margin-bottom: 1rem; opacity: 0.4; }
+        .empty-state h3 { font-size: 1.1rem; font-weight: 700; color: var(--text-2); margin-bottom: 0.5rem; }
+        .empty-state p { font-size: 0.875rem; line-height: 1.6; max-width: 320px; margin: 0 auto 1.5rem; }
+
+        @media (max-width: 900px) {
+            .page-content { padding: 1.5rem; }
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            .appointments-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 640px) {
+            .sidebar { display: none; }
+            .page-content { padding: 1rem; }
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            .appt-details { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
-    <a class="back" href="/">← Back to Chat</a>
-    <h1>📅 My Appointments</h1>
 
-    {% include 'partials/appointments_list.html' %}
+<aside class="sidebar" id="sidebar">
+
+    <div class="sidebar-logo">
+        <div class="logo-icon">🏥</div>
+        <div class="logo-info">
+            <div class="logo-name">Health Assistant</div>
+            <div class="logo-plan">Free plan</div>
+        </div>
+        <button class="sidebar-toggle" title="Toggle sidebar" onclick="toggleSidebar()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <line x1="9" y1="3" x2="9" y2="21"/>
+            </svg>
+        </button>
+    </div>
+
+    <div class="sidebar-reopen">
+        <button class="reopen-btn" onclick="toggleSidebar()" title="Expand sidebar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <line x1="9" y1="3" x2="9" y2="21"/>
+            </svg>
+        </button>
+    </div>
+
+    <a href="/" class="new-chat-btn">
+        <span class="new-chat-left">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Chat
+        </span>
+        <span class="new-chat-kbd">⌘ N</span>
+    </a>
+
+    <nav class="sidebar-nav">
+        <a class="nav-item" href="/">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span class="nav-item-label">Home</span>
+        </a>
+        <a class="nav-item active" href="/appointments">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span class="nav-item-label">Appointments</span>
+        </a>
+        <a class="nav-item" href="#">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            <span class="nav-item-label">History</span>
+        </a>
+    </nav>
+
+    <div class="sidebar-user">
+        <div class="user-avatar">
+            {{ display_name[0] | upper if display_name else "U" }}
+        </div>
+        <div class="user-info">
+            <div class="user-name">{{ display_name or "User" }}</div>
+            <div class="user-email">{{ user_id }}</div>
+        </div>
+    </div>
+
+</aside>
+
+
+<main class="main">
+
+    <div class="topbar">
+        <a href="/logout" class="topbar-btn" style="color: #ef4444; border-color: #fecaca;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Sign out
+        </a>
+    </div>
+
+    <div class="page-content">
+
+        <div class="page-header">
+            <h1>My Appointments </h1>
+            <p>Track your upcoming and past health appointments.</p>
+        </div>
+        
+        <div id="appointments-panel" hx-get="/appointments" hx-trigger="load" hx-swap="innerHTML">
+            {% if appointments %}
+            <div class="appointments-grid">
+                {% for appt in appointments %}
+                <div class="appt-card status-{{ appt.status }}">
+                    <div class="appt-header">
+                        <div class="appt-title">{{ appt.title }}</div>
+                        <span class="appt-status badge-{{ appt.status }}">{{ appt.status }}</span>
+                    </div>
+                    <div class="appt-details">
+                        <div class="detail-row">
+                            <span class="detail-label">Doctor</span>
+                            <span class="detail-value">{{ appt.doctor }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Date</span>
+                            <span class="detail-value">{{ appt.date }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Time</span>
+                            <span class="detail-value">{{ appt.time }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Location</span>
+                            <span class="detail-value">{{ appt.location }}</span>
+                        </div>
+                    </div>
+                    <div class="appt-actions">
+                        <a href="/appointments/{{ appt.id }}" class="btn btn-primary">View details</a>
+                       
+                        <button class="btn btn-danger">Cancel</button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">📭</div>
+                <h3>No appointments yet</h3>
+                <p>You don't have any appointments scheduled. Book one to get started.</p>
+                <a href="/appointments/new" class="new-appt-btn" style="display:inline-flex;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Book Appointment
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+</main>
+
+<script>
+    let sidebarCollapsed = false;
+
+    function toggleSidebar() {
+        sidebarCollapsed = !sidebarCollapsed;
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('collapsed', sidebarCollapsed);
+        const btn = document.querySelector('.sidebar-toggle');
+        btn.style.transform = sidebarCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
+    }
+
+    document.addEventListener('keydown', e => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+            e.preventDefault();
+            window.location.href = '/';
+        }
+    });
+</script>
+
 </body>
 </html>

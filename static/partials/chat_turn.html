@@ -1,37 +1,40 @@
-<!-- User bubble -->
-<div class="bubble user">{{ user_message }}</div>
+<!-- User message bubble -->
+<div class="message-row user">
+    <div class="bubble user">{{ user_message }}</div>
+</div>
 
-<!-- Assistant bubble -->
-<div class="bubble assistant">
-    {{ reply | replace('\n', '<br>') | safe }}
+<div class="message-row assistant">
+    <div class="bubble assistant">
+        {{ reply | replace('\n', '<br>') | safe }}
 
-    {% if follow_up_questions %}
-    <div class="follow-ups">
-        {% for q in follow_up_questions %}
-        <button class="quick-reply">{{ q }}</button>
-        {% endfor %}
+        {% if follow_up_questions %}
+            <div style="margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                {% for q in follow_up_questions %}
+                    <button class="quick-reply btn" style="background: var(--bg-secondary); color: var(--primary); padding: 0.5rem 1rem; border-radius: 20px; border: none; font-size: 0.9rem; cursor: pointer; transition: var(--transition);">{{ q }}</button>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% if probable_conditions %}
+            <div style="margin-top: 1rem; background: rgba(16,185,129,0.1); border: 1px solid var(--success); border-radius: 12px; padding: 1rem; font-size: 0.95rem;">
+                <strong style="color: var(--success);">Possible conditions:</strong><br/>
+                {% for c in probable_conditions %}
+                    • {{ c.name }} ({{ (c.confidence * 100)|int }}%) – {{ c.recommendation }}<br/>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% if appointment_created %}
+            <div style="margin-top: 1rem; background: var(--success-bg, rgba(16,185,129,0.08)); border: 1px solid var(--success); border-radius: 12px; padding: 1.25rem;">
+                <strong>Appointment Created</strong><br/>
+                 <strong>{{ appointment_created.title }}</strong><br/>
+                 {{ appointment_created.scheduled_at }}<br/>
+                 {{ appointment_created.location or 'TBD' }}<br/>
+                 Ref: {{ appointment_created.reference }}<br/>
+                <a href="/appointments" style="color: var(--primary); text-decoration: none; font-weight: 500; margin-top: 0.5rem; display: inline-block;">View Appointments →</a>
+            </div>
+        {% endif %}
     </div>
-    {% endif %}
-
-    {% if probable_conditions %}
-    <div class="conditions">
-        <strong>Probable conditions:</strong><br/>
-        {% for c in probable_conditions %}
-            {% if c.name is defined %}
-            • {{ c.name }} ({{ (c.confidence * 100) | int }}%) — {{ c.recommendation }}<br/>
-            {% endif %}
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    {% if appointment_created %}
-    <div class="appt-card">
-        ✅ <strong>{{ appointment_created.title }}</strong><br/>
-        📅 {{ appointment_created.scheduled_at }}<br/>
-        📍 {{ appointment_created.location or 'TBD' }}<br/>
-        🔖 Ref: {{ appointment_created.reference }}
-    </div>
-    {% endif %}
 </div>
 
 <script>scrollToBottom();</script>

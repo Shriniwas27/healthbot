@@ -3,377 +3,322 @@
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Create Account — Health Chatbot</title>
+    <title>Create Account — Health Assistant</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg:        #0b1120;
-            --panel:     #111827;
-            --card:      #1a2236;
-            --border:    #1f2f4a;
-            --accent:    #3b82f6;
-            --accent2:   #06b6d4;
-            --success:   #10b981;
-            --danger:    #ef4444;
-            --text:      #f0f6ff;
-            --muted:     #6b7fa3;
-            --label:     #94a3c4;
-        }
-
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+        :root {
+            --white: #ffffff;
+            --border: #e4e7ef;
+            --text: #111827;
+            --muted: #9399aa;
+            --label: #6b7280;
+            --accent: #4a7c59;
+            --accent-dark: #3a6b48;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --card: #f7f8fc;
+        }
+
         body {
-            font-family: 'DM Sans', sans-serif;
-            background: var(--bg);
-            color: var(--text);
+            font-family: 'Sora', system-ui, sans-serif;
+            background: var(--white);
             min-height: 100vh;
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 42% 58%;
         }
 
-        /* ── Left panel ─────────────────────── */
+        /* ── LEFT PANEL ─────────────────────────── */
         .left {
-            position: relative;
+            background: var(--white);
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            padding: 4rem;
-            background: linear-gradient(145deg, #0b1829 0%, #0f2044 60%, #0d1a35 100%);
-            overflow: hidden;
+            padding: 2.5rem 3.5rem;
+            min-height: 100vh;
+            overflow-y: auto;
+            animation: slideIn 0.5s ease both;
         }
 
-        .left::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background:
-                radial-gradient(ellipse 60% 50% at 20% 30%, rgba(59,130,246,0.15) 0%, transparent 60%),
-                radial-gradient(ellipse 40% 40% at 80% 70%, rgba(6,182,212,0.1) 0%, transparent 60%);
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-16px); }
+            to   { opacity: 1; transform: translateX(0); }
         }
-
-        .left-content { position: relative; z-index: 1; }
+        @keyframes fadeIn {
+            from { opacity: 0; } to { opacity: 1; }
+        }
+        @keyframes riseIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         .logo {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            margin-bottom: 4rem;
+            gap: 0.6rem;
+            margin-bottom: 2.5rem;
+            flex-shrink: 0;
         }
-        .logo-icon {
-            width: 44px; height: 44px;
-            background: linear-gradient(135deg, var(--accent), var(--accent2));
-            border-radius: 12px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.3rem;
-            box-shadow: 0 0 24px rgba(59,130,246,0.4);
-        }
-        .logo-name {
-            font-family: 'DM Serif Display', serif;
-            font-size: 1.3rem;
+
+        .logo-mark { width: 32px; height: 32px; }
+        .logo-mark svg { width: 100%; height: 100%; }
+
+        .logo-text {
+            font-weight: 700;
+            font-size: 1.05rem;
+            color: var(--text);
             letter-spacing: -0.02em;
         }
 
-        .left h1 {
-            font-family: 'DM Serif Display', serif;
-            font-size: 3rem;
-            line-height: 1.1;
-            letter-spacing: -0.03em;
-            margin-bottom: 1.25rem;
-        }
-        .left h1 em {
-            font-style: italic;
-            background: linear-gradient(90deg, var(--accent), var(--accent2));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .left p {
-            font-size: 1rem;
-            color: var(--muted);
-            line-height: 1.7;
-            max-width: 380px;
-            margin-bottom: 3rem;
-        }
-
-        .features { display: flex; flex-direction: column; gap: 1rem; }
-        .feature {
-            display: flex;
-            align-items: center;
-            gap: 0.875rem;
-            font-size: 0.9rem;
-            color: var(--label);
-        }
-        .feature-dot {
-            width: 8px; height: 8px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--accent), var(--accent2));
-            flex-shrink: 0;
-            box-shadow: 0 0 8px rgba(59,130,246,0.6);
-        }
-
-        /* Floating medical cross decoration */
-        .deco {
-            position: absolute;
-            right: -40px; bottom: 80px;
-            width: 280px; height: 280px;
-            opacity: 0.04;
-        }
-        .deco svg { width: 100%; height: 100%; }
-
-        /* ── Right panel ─────────────────────── */
-        .right {
-            background: var(--panel);
+        .form-area {
+            flex: 1;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start;
             align-items: center;
-            padding: 2rem;
-            overflow-y: auto;
+            max-width: 420px;
+            margin: 0 auto;
+            padding-bottom: 2rem;
         }
 
-        .form-card {
-            width: 100%;
-            max-width: 520px;
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            line-height: 1.15;
+            color: var(--text);
+            letter-spacing: -0.03em;
+            margin-bottom: 0.5rem;
         }
 
-        .form-header {
-            margin-bottom: 2rem;
-        }
-        .form-header h2 {
-            font-family: 'DM Serif Display', serif;
-            font-size: 1.75rem;
-            letter-spacing: -0.02em;
-            margin-bottom: 0.4rem;
-        }
-        .form-header p {
-            font-size: 0.9rem;
+        .subtitle {
+            font-size: 0.875rem;
             color: var(--muted);
+            margin-bottom: 1.75rem;
         }
-        .form-header a {
-            color: var(--accent);
+        .subtitle a {
+            color: var(--accent-dark);
+            font-weight: 600;
             text-decoration: none;
-            font-weight: 500;
         }
-        .form-header a:hover { text-decoration: underline; }
+        .subtitle a:hover { text-decoration: underline; }
 
         /* Progress steps */
         .steps {
             display: flex;
             align-items: center;
-            gap: 0;
             margin-bottom: 2rem;
         }
         .step {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            font-size: 0.78rem;
-            font-weight: 500;
+            gap: 0.4rem;
+            font-size: 0.75rem;
+            font-weight: 600;
             color: var(--muted);
             cursor: pointer;
-            transition: color 0.2s;
         }
         .step.active { color: var(--accent); }
-        .step.done   { color: var(--success); }
+        .step.done   { color: var(--success); cursor: pointer; }
         .step-num {
-            width: 26px; height: 26px;
+            width: 24px; height: 24px;
             border-radius: 50%;
             border: 2px solid var(--border);
             display: flex; align-items: center; justify-content: center;
-            font-size: 0.75rem;
-            font-weight: 600;
+            font-size: 0.7rem;
+            font-weight: 700;
             transition: all 0.2s;
             flex-shrink: 0;
         }
-        .step.active .step-num {
-            border-color: var(--accent);
-            background: rgba(59,130,246,0.15);
-            color: var(--accent);
-        }
-        .step.done .step-num {
-            border-color: var(--success);
-            background: rgba(16,185,129,0.15);
-            color: var(--success);
-        }
+        .step.active .step-num { border-color: var(--accent); background: rgba(74,124,89,0.12); color: var(--accent); }
+        .step.done .step-num   { border-color: var(--success); background: rgba(16,185,129,0.12); color: var(--success); }
         .step-line {
             flex: 1;
             height: 2px;
             background: var(--border);
             margin: 0 0.5rem;
-            transition: background 0.3s;
+            transition: background 0.35s;
         }
         .step-line.done { background: var(--success); }
 
+        /* Alert */
+        .alert {
+            padding: 0.7rem 1rem;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            margin-bottom: 1rem;
+            font-weight: 500;
+            display: none;
+        }
+        .alert.error   { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); color: var(--danger); display: block; }
+        .alert.success { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25); color: var(--success); display: block; }
+
         /* Form sections */
         .form-section { display: none; }
-        .form-section.active { display: block; animation: fadeIn 0.3s ease; }
+        .form-section.active { display: block; animation: riseIn 0.3s ease both; }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Field groups */
-        .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-        .field { margin-bottom: 1.1rem; }
-
-        label {
+        /* Fields */
+        .field { margin-bottom: 1.6rem; position: relative; }
+        .field label {
             display: block;
-            font-size: 0.78rem;
+            font-size: 0.85rem;
             font-weight: 500;
             color: var(--label);
-            margin-bottom: 0.4rem;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.01em;
         }
-        label .req { color: var(--accent); margin-left: 2px; }
+        .req { color: var(--accent); margin-left: 2px; }
 
-        input, select, textarea {
+        .field input,
+        .field select {
             width: 100%;
-            background: var(--card);
-            border: 1.5px solid var(--border);
-            border-radius: 10px;
-            padding: 0.7rem 0.9rem;
+            background: transparent;
+            border: none;
+            border-bottom: 1.5px solid var(--border);
+            padding: 0.85rem 0;
+            font-family: 'Sora', sans-serif;
+            font-size: 1.05rem;
             color: var(--text);
-            font-family: 'DM Sans', sans-serif;
-            font-size: 0.925rem;
             outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            transition: border-color 0.2s;
             appearance: none;
         }
-        input:focus, select:focus, textarea:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
-        }
-        input.error, select.error { border-color: var(--danger); }
-        input::placeholder { color: var(--muted); }
+        .field input::placeholder { color: var(--muted); font-weight: 300; }
+        .field input:focus,
+        .field select:focus { border-color: var(--accent); }
+        .field input.error,
+        .field select.error { border-color: var(--danger); }
 
-        select { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7fa3' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.9rem center; padding-right: 2.5rem; }
-        select option { background: var(--card); }
+        .field select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%239399aa' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.25rem center;
+            padding-right: 1.5rem;
+            cursor: pointer;
+        }
+        .field select option { background: white; color: var(--text); }
+
+        .field-suffix {
+            position: absolute;
+            right: 0;
+            bottom: 0.6rem;
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 1.1rem;
+        }
+
+        .field-error {
+            font-size: 0.72rem;
+            color: var(--danger);
+            margin-top: 0.25rem;
+            display: none;
+        }
+        .field-error.show { display: block; }
+
+        .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+
+        /* Phone input */
+        .phone-wrapper { position: relative; }
+        .phone-prefix {
+            position: absolute;
+            left: 0;
+            bottom: 0.6rem;
+            color: var(--label);
+            font-size: 0.92rem;
+            pointer-events: none;
+        }
+        .phone-wrapper input { padding-left: 2.5rem; }
+
+        /* Password strength */
+        .pw-strength { display: flex; gap: 3px; margin-top: 0.4rem; }
+        .pw-bar { height: 3px; flex: 1; background: var(--border); border-radius: 2px; transition: background 0.3s; }
+        .pw-bar.weak   { background: var(--danger); }
+        .pw-bar.medium { background: var(--warning); }
+        .pw-bar.strong { background: var(--success); }
+        .pw-label { font-size: 0.7rem; color: var(--muted); margin-top: 0.2rem; }
 
         /* Checkbox group */
-        .checkbox-group {
+        .checkbox-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 0.5rem;
+            margin-top: 0.4rem;
         }
-        .checkbox-item {
+        .check-item {
             display: flex;
             align-items: center;
             gap: 0.5rem;
             background: var(--card);
             border: 1.5px solid var(--border);
-            border-radius: 8px;
-            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            padding: 0.45rem 0.7rem;
             cursor: pointer;
-            transition: border-color 0.2s, background 0.2s;
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             color: var(--label);
+            transition: border-color 0.2s, background 0.2s;
         }
-        .checkbox-item:has(input:checked) {
+        .check-item:has(input:checked) {
             border-color: var(--accent);
-            background: rgba(59,130,246,0.08);
+            background: rgba(74,124,89,0.07);
             color: var(--text);
         }
-        .checkbox-item input[type="checkbox"] {
-            width: 16px; height: 16px;
+        .check-item input[type="checkbox"] {
+            width: 14px; height: 14px;
             accent-color: var(--accent);
-            border-radius: 4px;
             flex-shrink: 0;
             padding: 0;
         }
 
-        /* Radio group for notification channel */
-        .radio-group { display: flex; gap: 0.75rem; }
+        /* Radio group */
+        .radio-group { display: flex; gap: 0.6rem; margin-top: 0.4rem; }
         .radio-item {
             flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
-            background: var(--card);
+            gap: 0.4rem;
             border: 1.5px solid var(--border);
-            border-radius: 10px;
-            padding: 0.65rem 1rem;
+            border-radius: 6px;
+            padding: 0.55rem 0.5rem;
             cursor: pointer;
-            font-size: 0.875rem;
+            font-size: 0.82rem;
             color: var(--label);
             transition: all 0.2s;
         }
         .radio-item:has(input:checked) {
             border-color: var(--accent);
-            background: rgba(59,130,246,0.1);
+            background: rgba(74,124,89,0.07);
             color: var(--text);
         }
         .radio-item input { display: none; }
-
-        /* Password strength */
-        .pw-strength {
-            display: flex;
-            gap: 4px;
-            margin-top: 0.4rem;
-        }
-        .pw-bar {
-            height: 3px;
-            flex: 1;
-            background: var(--border);
-            border-radius: 2px;
-            transition: background 0.3s;
-        }
-        .pw-bar.weak   { background: var(--danger); }
-        .pw-bar.medium { background: #f59e0b; }
-        .pw-bar.strong { background: var(--success); }
-        .pw-label { font-size: 0.72rem; color: var(--muted); margin-top: 0.25rem; }
-
-        /* Error messages */
-        .field-error {
-            font-size: 0.75rem;
-            color: var(--danger);
-            margin-top: 0.3rem;
-            display: none;
-        }
-        .field-error.show { display: block; }
-
-        /* Alert */
-        .alert {
-            padding: 0.75rem 1rem;
-            border-radius: 10px;
-            font-size: 0.875rem;
-            margin-bottom: 1rem;
-            display: none;
-        }
-        .alert.error   { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; display: block; }
-        .alert.success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: #6ee7b7; display: block; }
 
         /* Buttons */
         .btn-row { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
 
         .btn {
             flex: 1;
-            padding: 0.8rem 1.5rem;
-            border-radius: 10px;
-            font-family: 'DM Sans', sans-serif;
-            font-size: 0.925rem;
+            padding: 1rem 1.2rem;
+            border-radius: 8px;
+            font-family: 'Sora', sans-serif;
+            font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
             border: none;
             transition: all 0.2s;
         }
         .btn-primary {
-            background: linear-gradient(135deg, var(--accent), #2563eb);
+            background: var(--accent);
             color: white;
-            box-shadow: 0 4px 16px rgba(59,130,246,0.3);
+            box-shadow: 0 4px 14px rgba(74, 124, 89, 0.35);
         }
         .btn-primary:hover {
+            background: var(--accent-dark);
             transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(59,130,246,0.4);
+            box-shadow: 0 6px 20px rgba(74, 124, 89, 0.45);
         }
-        .btn-primary:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
+        .btn-primary:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
         .btn-secondary {
             background: var(--card);
             color: var(--label);
@@ -381,106 +326,130 @@
         }
         .btn-secondary:hover { border-color: var(--accent); color: var(--text); }
 
-        /* Phone with flag */
-        .phone-wrapper { position: relative; }
-        .phone-prefix {
-            position: absolute;
-            left: 0.9rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--muted);
-            font-size: 0.9rem;
-            pointer-events: none;
-            user-select: none;
-        }
-        .phone-wrapper input { padding-left: 2.8rem; }
-
-        /* Success screen */
-        .success-screen {
-            display: none;
-            text-align: center;
-            padding: 2rem 0;
-            animation: fadeIn 0.4s ease;
-        }
-        .success-screen.show { display: block; }
-        .success-icon {
-            width: 72px; height: 72px;
-            background: rgba(16,185,129,0.15);
-            border: 2px solid var(--success);
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 2rem;
-            margin: 0 auto 1.5rem;
-            box-shadow: 0 0 24px rgba(16,185,129,0.3);
-        }
-        .success-screen h3 {
-            font-family: 'DM Serif Display', serif;
-            font-size: 1.75rem;
-            margin-bottom: 0.5rem;
-        }
-        .success-screen p { color: var(--muted); font-size: 0.9rem; margin-bottom: 2rem; }
-
-        /* Spinner */
         .spinner {
             display: inline-block;
-            width: 16px; height: 16px;
-            border: 2px solid rgba(255,255,255,0.3);
+            width: 13px; height: 13px;
+            border: 2px solid rgba(255,255,255,0.35);
             border-top-color: white;
             border-radius: 50%;
             animation: spin 0.7s linear infinite;
-            margin-right: 0.5rem;
+            margin-right: 0.4rem;
             vertical-align: middle;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Responsive */
+        /* Success screen */
+        .success-screen { display: none; text-align: center; padding: 2rem 0; animation: riseIn 0.4s ease; }
+        .success-screen.show { display: block; }
+        .success-icon {
+            width: 64px; height: 64px;
+            background: rgba(16,185,129,0.1);
+            border: 2px solid var(--success);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem;
+            margin: 0 auto 1.25rem;
+        }
+        .success-screen h3 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.5rem;
+        }
+        .success-screen p { font-size: 0.875rem; color: var(--muted); margin-bottom: 1.75rem; }
+        .success-screen .btn-primary {
+            display: inline-block;
+            text-decoration: none;
+            padding: 0.8rem 2rem;
+            flex: none;
+        }
+
+        /* ── RIGHT PANEL ─────────────────────────── */
+        .right {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(175deg, #5ec796 0%, #4a9e7f 22%, #4a7c59 50%, #3a6245 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 4rem 4rem 5rem;
+            animation: fadeIn 0.6s 0.1s ease both;
+        }
+
+        .tile-pattern {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 100%;
+            overflow: hidden;
+            opacity: 0.15;
+        }
+        .tile-pattern svg { width: 100%; height: 100%; }
+
+        .right-content { position: relative; z-index: 2; }
+
+        .right h2 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: white;
+            line-height: 1.15;
+            letter-spacing: -0.03em;
+            margin-bottom: 1rem;
+            max-width: 480px;
+        }
+
+        .right p {
+            font-size: 0.95rem;
+            color: rgba(255,255,255,0.75);
+            font-style: italic;
+            font-weight: 300;
+            line-height: 1.7;
+            max-width: 400px;
+        }
+
+        .features-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+            margin-top: 1.75rem;
+        }
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            font-size: 0.875rem;
+            color: rgba(255,255,255,0.88);
+        }
+        .feature-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.9);
+            flex-shrink: 0;
+        }
+
         @media (max-width: 900px) {
             body { grid-template-columns: 1fr; }
-            .left { display: none; }
-            .right { padding: 2rem 1.5rem; }
+            .right { display: none; }
+            .left { padding: 2rem 1.5rem; }
         }
     </style>
 </head>
 <body>
 
-<!-- ── Left Panel ──────────────────────────────── -->
 <div class="left">
-    <div class="left-content">
-        <div class="logo">
-            <div class="logo-icon">🏥</div>
-            <span class="logo-name">Health Chatbot</span>
+    <div class="logo">
+        <div class="logo-mark">
+            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="0" y="0" width="18" height="18" rx="5" fill="#4a7c59"/>
+                <rect x="10" y="10" width="18" height="18" rx="5" fill="#5a9469" opacity="0.85"/>
+            </svg>
         </div>
-
-        <h1>Your health,<br/><em>intelligently</em><br/>managed.</h1>
-        <p>Join thousands of patients getting smarter health guidance, instant symptom checks, and seamless appointment scheduling — powered by AI.</p>
-
-        <div class="features">
-            <div class="feature"><div class="feature-dot"></div> AI symptom analysis in your language</div>
-            <div class="feature"><div class="feature-dot"></div> Automated appointment reminders via SMS</div>
-            <div class="feature"><div class="feature-dot"></div> Secure, private health conversations</div>
-            <div class="feature"><div class="feature-dot"></div> Personalised based on your health profile</div>
-        </div>
+        <span class="logo-text">Health Assistant</span>
     </div>
 
-    <!-- Decorative cross -->
-    <div class="deco">
-        <svg viewBox="0 0 100 100" fill="white">
-            <rect x="35" y="5"  width="30" height="90" rx="8"/>
-            <rect x="5"  y="35" width="90" height="30" rx="8"/>
-        </svg>
-    </div>
-</div>
+    <div class="form-area">
+        <h1>Create your<br/>account</h1>
+        <p class="subtitle">Already have one? <a href="/login">Sign in</a></p>
 
-<!-- ── Right Panel ─────────────────────────────── -->
-<div class="right">
-    <div class="form-card">
-
-        <div class="form-header">
-            <h2>Create your account</h2>
-            <p>Already have one? <a href="/login">Sign in</a></p>
-        </div>
-
-        <!-- Progress steps -->
+        <!-- Steps -->
         <div class="steps">
             <div class="step active" id="step-tab-1" onclick="goToStep(1)">
                 <div class="step-num">1</div>
@@ -505,25 +474,23 @@
 
         <div id="alert" class="alert"></div>
 
-        <form id="register-form" method="POST" action="/register" novalidate>
+        <form id="register-form" onsubmit="return submitForm(event)" novalidate>
 
-            <!-- ── STEP 1: Account ───────────────── -->
             <div class="form-section active" id="section-1">
                 <div class="field">
                     <label>Full Name <span class="req">*</span></label>
-                    <input type="text" name="full_name" id="full_name" placeholder="Dr. Priya Sharma" autocomplete="name"/>
+                    <input type="text" id="full_name" name="full_name" placeholder="Priya Sharma" autocomplete="name"/>
                     <div class="field-error" id="err-full_name">Please enter your full name.</div>
                 </div>
-
                 <div class="field">
                     <label>Email Address <span class="req">*</span></label>
-                    <input type="email" name="email" id="email" placeholder="priya@example.com" autocomplete="email"/>
+                    <input type="email" id="email" name="email" placeholder="priya@example.com" autocomplete="email"/>
                     <div class="field-error" id="err-email">Please enter a valid email.</div>
                 </div>
-
                 <div class="field">
                     <label>Password <span class="req">*</span></label>
-                    <input type="password" name="password" id="password" placeholder="Min. 8 characters" autocomplete="new-password" oninput="checkStrength(this.value)"/>
+                    <input type="password" id="password" name="password" placeholder="Min. 8 characters" autocomplete="new-password" oninput="checkStrength(this.value)"/>
+                    <span class="field-suffix" id="pw-toggle">🙈</span>
                     <div class="pw-strength">
                         <div class="pw-bar" id="bar1"></div>
                         <div class="pw-bar" id="bar2"></div>
@@ -533,28 +500,26 @@
                     <div class="pw-label" id="pw-label">Enter a password</div>
                     <div class="field-error" id="err-password">Password must be at least 8 characters.</div>
                 </div>
-
                 <div class="field">
                     <label>Confirm Password <span class="req">*</span></label>
-                    <input type="password" name="confirm_password" id="confirm_password" placeholder="Repeat password" autocomplete="new-password"/>
+                    <input type="password" id="confirm_password" placeholder="Repeat password" autocomplete="new-password"/>
                     <div class="field-error" id="err-confirm_password">Passwords do not match.</div>
                 </div>
-
                 <div class="btn-row">
                     <button type="button" class="btn btn-primary" onclick="nextStep(1)">Continue →</button>
                 </div>
             </div>
 
-            <!-- ── STEP 2: Profile ───────────────── -->
+        
             <div class="form-section" id="section-2">
                 <div class="field-row">
                     <div class="field">
                         <label>Age</label>
-                        <input type="number" name="age" id="age" placeholder="28" min="1" max="120"/>
+                        <input type="number" id="age" name="age" placeholder="28" min="1" max="120"/>
                     </div>
                     <div class="field">
                         <label>Gender</label>
-                        <select name="gender" id="gender">
+                        <select id="gender" name="gender">
                             <option value="">Select</option>
                             <option value="male">Male</option>
                             <option value="female">Female</option>
@@ -563,10 +528,9 @@
                         </select>
                     </div>
                 </div>
-
                 <div class="field">
                     <label>Blood Group</label>
-                    <select name="blood_group" id="blood_group">
+                    <select id="blood_group" name="blood_group">
                         <option value="">Unknown / Not sure</option>
                         <option value="A+">A+</option>
                         <option value="A-">A−</option>
@@ -578,178 +542,205 @@
                         <option value="AB-">AB−</option>
                     </select>
                 </div>
-
                 <div class="field">
                     <label>Preferred Language</label>
-                    <select name="preferred_language" id="preferred_language">
+                    <select id="preferred_language" name="preferred_language">
                         <option value="en">English</option>
                         <option value="hi">Hindi — हिंदी</option>
                         <option value="mr">Marathi — मराठी</option>
                         <option value="es">Spanish — Español</option>
-                        <option value="fr">French — Français</option>
-                        <option value="ar">Arabic — العربية</option>
                         <option value="ta">Tamil — தமிழ்</option>
+                        <option value="ar">Arabic — العربية</option>
                     </select>
                 </div>
-
                 <div class="btn-row">
                     <button type="button" class="btn btn-secondary" onclick="prevStep(2)">← Back</button>
                     <button type="button" class="btn btn-primary" onclick="nextStep(2)">Continue →</button>
                 </div>
             </div>
 
-            <!-- ── STEP 3: Health ────────────────── -->
+            
             <div class="form-section" id="section-3">
                 <div class="field">
                     <label>Existing Medical Conditions</label>
-                    <div class="checkbox-group">
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="existing_conditions" value="diabetes"/> Diabetes
-                        </label>
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="existing_conditions" value="hypertension"/> Hypertension
-                        </label>
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="existing_conditions" value="asthma"/> Asthma
-                        </label>
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="existing_conditions" value="heart_disease"/> Heart Disease
-                        </label>
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="existing_conditions" value="thyroid"/> Thyroid
-                        </label>
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="existing_conditions" value="kidney_disease"/> Kidney Disease
-                        </label>
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="existing_conditions" value="arthritis"/> Arthritis
-                        </label>
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="existing_conditions" value="none"/> None
-                        </label>
+                    <div class="checkbox-grid">
+                        <label class="check-item"><input type="checkbox" name="existing_conditions" value="diabetes"/> Diabetes</label>
+                        <label class="check-item"><input type="checkbox" name="existing_conditions" value="hypertension"/> Hypertension</label>
+                        <label class="check-item"><input type="checkbox" name="existing_conditions" value="asthma"/> Asthma</label>
+                        <label class="check-item"><input type="checkbox" name="existing_conditions" value="heart_disease"/> Heart Disease</label>
+                        <label class="check-item"><input type="checkbox" name="existing_conditions" value="thyroid"/> Thyroid</label>
+                        <label class="check-item"><input type="checkbox" name="existing_conditions" value="kidney_disease"/> Kidney Disease</label>
+                        <label class="check-item"><input type="checkbox" name="existing_conditions" value="arthritis"/> Arthritis</label>
+                        <label class="check-item"><input type="checkbox" name="existing_conditions" value="none"/> None</label>
                     </div>
                 </div>
-
                 <div class="btn-row">
                     <button type="button" class="btn btn-secondary" onclick="prevStep(3)">← Back</button>
                     <button type="button" class="btn btn-primary" onclick="nextStep(3)">Continue →</button>
                 </div>
             </div>
 
-            <!-- ── STEP 4: Contact & Notifications ── -->
+            <!-- ── STEP 4: Contact ── -->
             <div class="form-section" id="section-4">
                 <div class="field">
                     <label>Mobile Number <span class="req">*</span></label>
                     <div class="phone-wrapper">
                         <span class="phone-prefix">+91</span>
-                        <input type="tel" name="phone" id="phone" placeholder="98765 43210" maxlength="10" inputmode="numeric"/>
+                        <input type="tel" id="phone" placeholder="98765 43210" maxlength="10" inputmode="numeric"/>
                     </div>
-                    <div class="field-error" id="err-phone">Please enter a valid 10-digit mobile number.</div>
+                    <div class="field-error" id="err-phone">Please enter a valid 10-digit number.</div>
                 </div>
-
                 <div class="field">
                     <label>Receive Reminders Via</label>
                     <div class="radio-group">
-                        <label class="radio-item">
-                            <input type="radio" name="notification_channel" value="sms" checked/> 📱 SMS
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="notification_channel" value="whatsapp"/> 💬 WhatsApp
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="notification_channel" value="both"/> ✨ Both
-                        </label>
+                        <label class="radio-item"><input type="radio" name="notification_channel" value="sms" checked/> 📱 SMS</label>
+                        <label class="radio-item"><input type="radio" name="notification_channel" value="whatsapp"/> 💬 WhatsApp</label>
+                        <label class="radio-item"><input type="radio" name="notification_channel" value="both"/> ✨ Both</label>
                     </div>
                 </div>
-
                 <div class="btn-row">
                     <button type="button" class="btn btn-secondary" onclick="prevStep(4)">← Back</button>
-                    <button type="submit" class="btn btn-primary" id="submit-btn" onclick="submitForm(event)">
-                        Create Account
-                    </button>
+                    <button type="submit" class="btn btn-primary" id="submit-btn">Create Account</button>
                 </div>
             </div>
-
         </form>
 
-        <!-- Success screen -->
+        <!-- Success state -->
         <div class="success-screen" id="success-screen">
             <div class="success-icon">✅</div>
             <h3>You're all set!</h3>
-            <p id="success-msg">Your account has been created. A welcome message has been sent to your phone.</p>
-            <a href="/login" class="btn btn-primary" style="display:inline-block; text-decoration:none; padding:0.8rem 2rem;">
-                Go to Login →
-            </a>
+            <p>Your account has been created. A welcome message has been sent to your phone.</p>
+            <a href="/login" class="btn btn-primary">Go to Login →</a>
         </div>
+    </div>
+</div>
 
+
+<div class="right">
+    <div class="tile-pattern">
+        <svg viewBox="0 0 800 440" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="fade2" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="transparent"/>
+                    <stop offset="70%" stop-color="#6b81f2" stop-opacity="0.5"/>
+                    <stop offset="100%" stop-color="#6b81f2"/>
+                </linearGradient>
+            </defs>
+            <g opacity="0.5">
+                <!-- Row 1 -->
+                <circle cx="45" cy="45" r="28" fill="rgba(255,255,255,0.12)"/>
+                <rect x="102" y="2" width="66" height="66" rx="33" fill="rgba(255,255,255,0.08)"/>
+                <circle cx="235" cy="45" r="28" fill="rgba(255,255,255,0.1)"/>
+                <rect x="302" y="2" width="66" height="66" rx="8" fill="rgba(255,255,255,0.07)"/>
+                <circle cx="435" cy="45" r="28" fill="rgba(255,255,255,0.12)"/>
+                <rect x="502" y="2" width="66" height="66" rx="33" fill="rgba(255,255,255,0.08)"/>
+                <circle cx="635" cy="45" r="28" fill="rgba(255,255,255,0.1)"/>
+                <rect x="702" y="2" width="66" height="66" rx="8" fill="rgba(255,255,255,0.07)"/>
+                <rect x="-10" y="-10" width="90" height="90" rx="20" fill="none" stroke="white" stroke-width="1.5" opacity="0.6"/>
+                <rect x="90" y="-10" width="90" height="90" rx="45" fill="none" stroke="white" stroke-width="1.5" opacity="0.5"/>
+                <rect x="190" y="-10" width="90" height="90" rx="20" fill="none" stroke="white" stroke-width="1.5" opacity="0.6"/>
+                <rect x="290" y="-10" width="90" height="90" rx="45" fill="none" stroke="white" stroke-width="1.5" opacity="0.5"/>
+                <rect x="390" y="-10" width="90" height="90" rx="20" fill="none" stroke="white" stroke-width="1.5" opacity="0.6"/>
+                <rect x="490" y="-10" width="90" height="90" rx="45" fill="none" stroke="white" stroke-width="1.5" opacity="0.5"/>
+                <rect x="590" y="-10" width="90" height="90" rx="20" fill="none" stroke="white" stroke-width="1.5" opacity="0.6"/>
+                <rect x="690" y="-10" width="90" height="90" rx="45" fill="none" stroke="white" stroke-width="1.5" opacity="0.5"/>
+
+                <!-- Row 2 -->
+                <circle cx="45" cy="145" r="28" fill="rgba(255,255,255,0.08)"/>
+                <rect x="102" y="102" width="66" height="66" rx="8" fill="rgba(255,255,255,0.1)"/>
+                <circle cx="235" cy="145" r="28" fill="rgba(255,255,255,0.07)"/>
+                <rect x="302" y="102" width="66" height="66" rx="33" fill="rgba(255,255,255,0.12)"/>
+                <circle cx="435" cy="145" r="28" fill="rgba(255,255,255,0.08)"/>
+                <rect x="502" y="102" width="66" height="66" rx="8" fill="rgba(255,255,255,0.1)"/>
+                <circle cx="635" cy="145" r="28" fill="rgba(255,255,255,0.07)"/>
+                <rect x="702" y="102" width="66" height="66" rx="33" fill="rgba(255,255,255,0.12)"/>
+                <rect x="-10" y="90" width="90" height="90" rx="45" fill="none" stroke="white" stroke-width="1.5" opacity="0.5"/>
+                <rect x="90" y="90" width="90" height="90" rx="20" fill="none" stroke="white" stroke-width="1.5" opacity="0.6"/>
+                <rect x="190" y="90" width="90" height="90" rx="45" fill="none" stroke="white" stroke-width="1.5" opacity="0.5"/>
+                <rect x="290" y="90" width="90" height="90" rx="20" fill="none" stroke="white" stroke-width="1.5" opacity="0.6"/>
+                <rect x="390" y="90" width="90" height="90" rx="45" fill="none" stroke="white" stroke-width="1.5" opacity="0.5"/>
+                <rect x="490" y="90" width="90" height="90" rx="20" fill="none" stroke="white" stroke-width="1.5" opacity="0.6"/>
+                <rect x="590" y="90" width="90" height="90" rx="45" fill="none" stroke="white" stroke-width="1.5" opacity="0.5"/>
+                <rect x="690" y="90" width="90" height="90" rx="20" fill="none" stroke="white" stroke-width="1.5" opacity="0.6"/>
+
+                <!-- Row 3 fading -->
+                <circle cx="45" cy="245" r="28" fill="rgba(255,255,255,0.04)"/>
+                <rect x="102" y="202" width="66" height="66" rx="33" fill="rgba(255,255,255,0.04)"/>
+                <circle cx="235" cy="245" r="28" fill="rgba(255,255,255,0.03)"/>
+                <rect x="302" y="202" width="66" height="66" rx="8" fill="rgba(255,255,255,0.04)"/>
+                <circle cx="435" cy="245" r="28" fill="rgba(255,255,255,0.03)"/>
+                <rect x="502" y="202" width="66" height="66" rx="33" fill="rgba(255,255,255,0.04)"/>
+                <rect x="-10" y="190" width="90" height="90" rx="20" fill="none" stroke="white" stroke-width="1" opacity="0.2"/>
+                <rect x="90" y="190" width="90" height="90" rx="45" fill="none" stroke="white" stroke-width="1" opacity="0.15"/>
+                <rect x="190" y="190" width="90" height="90" rx="20" fill="none" stroke="white" stroke-width="1" opacity="0.15"/>
+                <rect x="290" y="190" width="90" height="90" rx="45" fill="none" stroke="white" stroke-width="1" opacity="0.2"/>
+                <rect x="390" y="190" width="90" height="90" rx="20" fill="none" stroke="white" stroke-width="1" opacity="0.15"/>
+                <rect x="490" y="190" width="90" height="90" rx="45" fill="none" stroke="white" stroke-width="1" opacity="0.15"/>
+            </g>
+            <rect width="800" height="440" fill="url(#fade2)"/>
+        </svg>
+    </div>
+
+    <div class="right-content">
+        <h2>Your health,<br/>intelligently<br/>managed.</h2>
+        <p>Join thousands of patients getting smarter health guidance, instant symptom checks, and seamless appointment scheduling.</p>
+        <div class="features-list">
+            <div class="feature-item"><div class="feature-dot"></div> AI symptom analysis in your language</div>
+            <div class="feature-item"><div class="feature-dot"></div> Automated appointment reminders via SMS</div>
+            <div class="feature-item"><div class="feature-dot"></div> Secure, private health conversations</div>
+            <div class="feature-item"><div class="feature-dot"></div> Personalised based on your health profile</div>
+        </div>
     </div>
 </div>
 
 <script>
     let currentStep = 1;
-    const TOTAL_STEPS = 4;
+    const TOTAL = 4;
 
     function goToStep(n) {
-        if (n > currentStep) return; // can't jump forward without validation
+        if (n > currentStep) return;
         showStep(n);
     }
 
     function showStep(n) {
-        // Hide all sections
         document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
         document.getElementById(`section-${n}`).classList.add('active');
-
-        // Update step indicators
-        for (let i = 1; i <= TOTAL_STEPS; i++) {
-            const tab  = document.getElementById(`step-tab-${i}`);
-            tab.classList.remove('active', 'done');
-            if (i < n)  tab.classList.add('done');
+        for (let i = 1; i <= TOTAL; i++) {
+            const tab = document.getElementById(`step-tab-${i}`);
+            tab.classList.remove('active','done');
+            if (i < n) tab.classList.add('done');
             if (i === n) tab.classList.add('active');
         }
-
-        // Update connector lines
-        for (let i = 1; i < TOTAL_STEPS; i++) {
-            const line = document.getElementById(`line-${i}`);
-            line.classList.toggle('done', i < n);
+        for (let i = 1; i < TOTAL; i++) {
+            document.getElementById(`line-${i}`).classList.toggle('done', i < n);
         }
-
         currentStep = n;
         clearAlert();
     }
 
-    function nextStep(from) {
-        if (!validateStep(from)) return;
-        if (from < TOTAL_STEPS) showStep(from + 1);
-    }
-
-    function prevStep(from) {
-        if (from > 1) showStep(from - 1);
-    }
+    function nextStep(from) { if (validateStep(from)) showStep(from + 1); }
+    function prevStep(from) { if (from > 1) showStep(from - 1); }
 
     function validateStep(step) {
         let valid = true;
-
         if (step === 1) {
             const name = document.getElementById('full_name');
             const email = document.getElementById('email');
             const pw = document.getElementById('password');
             const cpw = document.getElementById('confirm_password');
-
-            if (!name.value.trim()) { showErr('full_name', true); valid = false; } else showErr('full_name', false);
-            if (!email.value.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) { showErr('email', true); valid = false; } else showErr('email', false);
-            if (pw.value.length < 8) { showErr('password', true); valid = false; } else showErr('password', false);
-            if (pw.value !== cpw.value) { showErr('confirm_password', true); valid = false; } else showErr('confirm_password', false);
+            setErr('full_name', !name.value.trim()); if (!name.value.trim()) valid = false;
+            setErr('email', !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)); if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) valid = false;
+            setErr('password', pw.value.length < 8); if (pw.value.length < 8) valid = false;
+            setErr('confirm_password', pw.value !== cpw.value); if (pw.value !== cpw.value) valid = false;
         }
-
         if (step === 4) {
             const phone = document.getElementById('phone');
-            if (!phone.value.match(/^\d{10}$/)) { showErr('phone', true); valid = false; } else showErr('phone', false);
+            setErr('phone', !/^\d{10}$/.test(phone.value)); if (!/^\d{10}$/.test(phone.value)) valid = false;
         }
-
         return valid;
     }
 
-    function showErr(id, show) {
+    function setErr(id, show) {
         const err = document.getElementById(`err-${id}`);
         const inp = document.getElementById(id);
         if (err) err.classList.toggle('show', show);
@@ -758,67 +749,63 @@
 
     function clearAlert() {
         const a = document.getElementById('alert');
-        a.className = 'alert';
-        a.textContent = '';
+        a.className = 'alert'; a.textContent = '';
     }
 
     function showAlert(msg, type) {
         const a = document.getElementById('alert');
-        a.className = `alert ${type}`;
-        a.textContent = msg;
+        a.className = `alert ${type}`; a.textContent = msg;
     }
 
-    // Password strength checker
     function checkStrength(pw) {
-        const bars   = [1,2,3,4].map(i => document.getElementById(`bar${i}`));
-        const label  = document.getElementById('pw-label');
-        let score = 0;
-        if (pw.length >= 8)  score++;
-        if (/[A-Z]/.test(pw)) score++;
-        if (/[0-9]/.test(pw)) score++;
-        if (/[^A-Za-z0-9]/.test(pw)) score++;
-
-        const levels = ['', 'weak', 'medium', 'medium', 'strong'];
-        const labels = ['Enter a password', 'Weak', 'Fair', 'Good', 'Strong 🔒'];
-        bars.forEach((b, i) => {
-            b.className = 'pw-bar';
-            if (i < score) b.classList.add(levels[score]);
-        });
-        label.textContent = labels[score];
-        label.style.color = ['#6b7fa3','#ef4444','#f59e0b','#f59e0b','#10b981'][score];
+        const bars = [1,2,3,4].map(i => document.getElementById(`bar${i}`));
+        const label = document.getElementById('pw-label');
+        let s = 0;
+        if (pw.length >= 8) s++;
+        if (/[A-Z]/.test(pw)) s++;
+        if (/[0-9]/.test(pw)) s++;
+        if (/[^A-Za-z0-9]/.test(pw)) s++;
+        const cls  = ['','weak','medium','medium','strong'];
+        const lbl  = ['Enter a password','Weak','Fair','Good','Strong 🔒'];
+        const clrs = ['#9399aa','#ef4444','#f59e0b','#f59e0b','#10b981'];
+        bars.forEach((b, i) => { b.className = 'pw-bar'; if (i < s) b.classList.add(cls[s]); });
+        label.textContent = lbl[s]; label.style.color = clrs[s];
     }
 
-    // Format phone input to digits only
-    document.getElementById('phone').addEventListener('input', function() {
-        this.value = this.value.replace(/\D/g, '').slice(0, 10);
+    // Show/hide password
+    document.getElementById('pw-toggle').addEventListener('click', () => {
+        const inp = document.getElementById('password');
+        const tog = document.getElementById('pw-toggle');
+        inp.type = inp.type === 'password' ? 'text' : 'password';
+        tog.textContent = inp.type === 'password' ? '🙈' : '👁️';
     });
 
-    // Form submission
+    // Phone digits only
+    document.getElementById('phone').addEventListener('input', function() {
+        this.value = this.value.replace(/\D/g,'').slice(0,10);
+    });
+
     async function submitForm(e) {
         e.preventDefault();
-        if (!validateStep(4)) return;
+        if (!validateStep(4)) return false;
 
         const btn = document.getElementById('submit-btn');
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner"></span> Creating account...';
+        btn.innerHTML = '<span class="spinner"></span>Creating account…';
 
-        // Collect existing_conditions checkboxes
         const conditions = [...document.querySelectorAll('input[name="existing_conditions"]:checked')]
-            .map(cb => cb.value)
-            .filter(v => v !== 'none');
-
-        const phone = '+91' + document.getElementById('phone').value;
+            .map(cb => cb.value).filter(v => v !== 'none');
 
         const payload = {
-            full_name:            document.getElementById('full_name').value.trim(),
-            email:                document.getElementById('email').value.trim(),
-            password:             document.getElementById('password').value,
-            age:                  parseInt(document.getElementById('age').value) || null,
-            gender:               document.getElementById('gender').value || null,
-            blood_group:          document.getElementById('blood_group').value || null,
-            existing_conditions:  conditions,
-            preferred_language:   document.getElementById('preferred_language').value,
-            phone:                phone,
+            full_name: document.getElementById('full_name').value.trim(),
+            email: document.getElementById('email').value.trim(),
+            password: document.getElementById('password').value,
+            age: parseInt(document.getElementById('age').value) || null,
+            gender: document.getElementById('gender').value || null,
+            blood_group: document.getElementById('blood_group').value || null,
+            existing_conditions: conditions,
+            preferred_language: document.getElementById('preferred_language').value,
+            phone: '+91' + document.getElementById('phone').value,
             notification_channel: document.querySelector('input[name="notification_channel"]:checked').value,
         };
 
@@ -827,22 +814,20 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
+                redirect: 'follow',
             });
 
-            const data = await resp.json();
-
-            if (resp.ok) {
-                document.getElementById('register-form').style.display = 'none';
-                document.querySelector('.steps').style.display = 'none';
-                document.getElementById('success-msg').textContent =
-                    `Welcome, ${payload.full_name.split(' ')[0]}! Your account is ready. A welcome message was sent to ${phone}.`;
-                document.getElementById('success-screen').classList.add('show');
+            if (resp.redirected && resp.url.includes('/login')) {
+                window.location.href = resp.url;
+            } else if (resp.ok) {
+                window.location.href = '/login?registered=true';
             } else {
+                const data = await resp.json();
                 showAlert(data.detail || 'Registration failed. Please try again.', 'error');
                 btn.disabled = false;
                 btn.innerHTML = 'Create Account';
             }
-        } catch (err) {
+        } catch {
             showAlert('Network error. Please check your connection.', 'error');
             btn.disabled = false;
             btn.innerHTML = 'Create Account';

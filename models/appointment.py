@@ -78,16 +78,22 @@ class AppointmentDocument:
 
     @staticmethod
     def to_out(doc: dict) -> dict:
-        """
-        Convert a raw MongoDB document to a serialisable dict
-        suitable for API responses and Jinja2 templates.
-        """
+        scheduled_at_raw = doc["scheduled_at"]
+        
+        # Format ISO string → human-readable for API responses / SMS
+        try:
+            dt = datetime.fromisoformat(scheduled_at_raw.replace("Z", "+00:00"))
+            scheduled_at_display = dt.strftime("%d %b %Y, %I:%M %p UTC")
+        except (ValueError, TypeError, AttributeError):
+            scheduled_at_display = scheduled_at_raw  # TBD or legacy value
+
         return {
             "id":               doc.get("appointment_id", str(doc.get("_id", ""))),
             "user_id":          doc["user_id"],
             "appointment_type": doc["appointment_type"],
             "title":            doc["title"],
-            "scheduled_at":     doc["scheduled_at"],
+            "scheduled_at":     scheduled_at_display,   # human-readable for display
+            "scheduled_at_iso": scheduled_at_raw,        # raw ISO for any callers that need it
             "doctor_name":      doc.get("doctor_name", ""),
             "location":         doc.get("location", ""),
             "status":           doc["status"],

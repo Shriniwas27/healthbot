@@ -14,10 +14,6 @@ Gemini context for a returning user:
   - Active messages  → from InMemory
   - Previous-session summary → from MongoDB
   - Both injected as system context → model always has full picture
-
-NOTE: The only change vs. the original is that _generate_summary() now imports
-      from agents.gemini_client instead of agents.gemini_client (same path kept)
-      and relies on the ADK-backed generate_summary() helper.
 """
 
 import asyncio
@@ -33,10 +29,6 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 settings = get_settings()
 
-
-# ─────────────────────────────────────────────
-# Data Structures
-# ─────────────────────────────────────────────
 
 @dataclass
 class Message:
@@ -93,9 +85,7 @@ class InMemorySession:
         return self.messages_since_sync >= interval
 
 
-# ─────────────────────────────────────────────
-# MongoDB Document Schema
-# ─────────────────────────────────────────────
+
 
 class SessionDocument:
     COLLECTION = "sessions"
@@ -111,14 +101,11 @@ class SessionDocument:
             "message_count": len(session.messages),
             "last_active": datetime.fromtimestamp(session.last_active, tz=timezone.utc),
             "created_at": datetime.fromtimestamp(session.created_at, tz=timezone.utc),
-            "full_history": [m.to_dict() for m in session.messages[-50:]],
+            # full_history persisted in the separate `chats` collection via ChatService
             "updated_at": datetime.now(tz=timezone.utc),
         }
 
 
-# ─────────────────────────────────────────────
-# Hybrid Session Service
-# ─────────────────────────────────────────────
 
 class HybridSessionService:
     """
@@ -132,8 +119,6 @@ class HybridSessionService:
     def __init__(self):
         self._sessions: dict[str, InMemorySession] = {}
         self._lock = asyncio.Lock()
-
-    # ── Session Lifecycle ──────────────────────────────────
 
     async def create_session(
         self,
@@ -220,8 +205,6 @@ class HybridSessionService:
             session.state.update(patch)
             session.is_dirty = True
 
-    # ── Context Builder for ADK-backed Gemini calls ────────
-
     async def build_gemini_context(self, session_id: str) -> list[dict]:
         """
         Returns message dicts compatible with the generate_response() helper
@@ -236,7 +219,6 @@ class HybridSessionService:
 
         context_messages: list[dict] = []
 
-        # Inject MongoDB summary as leading context
         mongo_doc = await self._fetch_mongo_doc(session_id)
         if mongo_doc and mongo_doc.get("summary"):
             summary_text = (
@@ -252,8 +234,6 @@ class HybridSessionService:
             context_messages.append({"role": gemini_role, "parts": [{"text": msg.content}]})
 
         return context_messages
-
-    # ── MongoDB Sync ───────────────────────────────────────
 
     async def _sync_to_mongo(self, session: InMemorySession) -> None:
         try:
@@ -290,8 +270,6 @@ class HybridSessionService:
                 created_at=doc["created_at"].timestamp(),
                 last_active=doc["last_active"].timestamp(),
             )
-            for m in doc.get("full_history", []):
-                session.messages.append(Message.from_dict(m))
 
             session.messages_since_sync = 0
             session.is_dirty = False
@@ -339,12 +317,10 @@ class HybridSessionService:
             for m in session.messages[-30:]
         )
         try:
-            return await generate_summary(transcript, session.language)
+            return await generate_summary(transcript)
         except Exception as e:
             logger.error(f"Summary generation failed: {e}")
             return " | ".join(m.content for m in session.messages[-5:])
-
-    # ── Cleanup ────────────────────────────────────────────
 
     async def cleanup_expired(self) -> int:
         expired: list[str] = []
@@ -365,5 +341,4 @@ class HybridSessionService:
         return len(self._sessions)
 
 
-# ── Singleton ──────────────────────────────────────────────
 session_service = HybridSessionService()

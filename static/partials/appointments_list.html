@@ -1,25 +1,41 @@
 {% if appointments %}
     {% for appt in appointments %}
     <div class="appt-card">
-        <div class="appt-info">
-            <h3>{{ appt.title }}</h3>
-            <p>📅 {{ appt.scheduled_at }} &nbsp;|&nbsp; 📍 {{ appt.location or 'TBD' }}</p>
-            <p>🔖 {{ appt.reference }} &nbsp;|&nbsp; 👨‍⚕️ {{ appt.doctor_name or 'TBD' }}</p>
+        <div class="appt-header">
+            <div class="appt-title">{{ appt.title }}</div>
+            <span class="appt-status status-{{ appt.status }}">{{ appt.status.title() }}</span>
         </div>
-        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem;">
-            <span class="badge {{ appt.status }}">{{ appt.status }}</span>
+        <div class="appt-details">
+            <div><span class="detail-label">Date & Time</span><div class="detail-value">{{ appt.scheduled_at }}</div></div>
+            <div><span class="detail-label">Location</span><div class="detail-value">{{ appt.location or 'To be confirmed' }}</div></div>
+            <div><span class="detail-label">Doctor</span><div class="detail-value">{{ appt.doctor_name or 'Assigned' }}</div></div>
+            <div><span class="detail-label">Reference</span><div class="detail-value">{{ appt.reference }}</div></div>
+        </div>
+        <div class="appt-actions">
             {% if appt.status == 'scheduled' %}
-            <button class="cancel-btn"
-                    hx-post="/appointments/cancel"
-                    hx-vals='{"appointment_id": "{{ appt.id }}"}'
-                    hx-target="body"
-                    hx-swap="innerHTML">
-                Cancel
-            </button>
+                <button class="btn btn-danger"
+                        hx-post="/appointments/cancel"
+                        hx-vals='js:{appointment_id: `{{ appt.id }}`}'
+                        hx-target="#appointments-panel"
+                        hx-swap="innerHTML"
+                        hx-confirm="Cancel this appointment?">
+                    Cancel
+                </button>
             {% endif %}
+           
         </div>
     </div>
     {% endfor %}
+    {% if cancelled %}
+        <div style="background: rgba(16,185,129,0.1); border: 1px solid var(--success); border-radius: var(--radius); padding: 1rem; margin: 1rem 0; color: var(--success);">
+            Appointment cancelled successfully.
+        </div>
+    {% endif %}
 {% else %}
-    <p class="empty">No appointments found. Ask the chatbot to schedule one!</p>
+    <div class="empty-state">
+        <div class="empty-icon"></div>
+        <h3>No appointments yet</h3>
+        <p>Schedule your first appointment through the chat or contact reception.</p>
+        <a href="/" class="btn btn-primary" style="margin-top: 1rem; display: inline-block;">Start Chat</a>
+    </div>
 {% endif %}

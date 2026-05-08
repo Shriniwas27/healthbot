@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import bcrypt
 from datetime import datetime, timezone
-
 from db.mongo import get_database
 from models.user import UserDocument
 from utils.logger import get_logger
@@ -23,7 +22,6 @@ logger = get_logger(__name__)
 
 class UserService:
 
-    # ── Registration ───────────────────────────────────────
 
     async def register(
         self,
@@ -44,14 +42,14 @@ class UserService:
         """
         db = await get_database()
 
-        # Check duplicate email
+        
         existing = await db[UserDocument.COLLECTION].find_one(
             {"email": email.lower().strip()}
         )
         if existing:
             raise ValueError("An account with this email already exists.")
 
-        # Hash password with bcrypt
+        
         password_hash = bcrypt.hashpw(
             password.encode("utf-8"), bcrypt.gensalt()
         ).decode("utf-8")
@@ -73,8 +71,7 @@ class UserService:
         logger.info(f"New user registered: {email} (id={doc['user_id']})")
         return UserDocument.to_safe_dict(doc)
 
-    # ── Authentication ─────────────────────────────────────
-
+    
     async def login(self, email: str, password: str) -> dict | None:
         """
         Verify email + password.
@@ -96,8 +93,7 @@ class UserService:
         logger.info(f"User logged in: {email}")
         return UserDocument.to_safe_dict(doc)
 
-    # ── Fetch ──────────────────────────────────────────────
-
+    
     async def get_by_id(self, user_id: str) -> dict | None:
         db = await get_database()
         doc = await db[UserDocument.COLLECTION].find_one({"user_id": user_id})
@@ -110,11 +106,10 @@ class UserService:
         )
         return UserDocument.to_safe_dict(doc) if doc else None
 
-    # ── Update ─────────────────────────────────────────────
-
+    
     async def update(self, user_id: str, patch: dict) -> dict | None:
         """Merge patch fields into the user document."""
-        patch.pop("password_hash", None)   # never allow direct hash update
+        patch.pop("password_hash", None)   
         patch.pop("user_id", None)
         patch["updated_at"] = datetime.now(tz=timezone.utc)
 
@@ -127,5 +122,5 @@ class UserService:
         return UserDocument.to_safe_dict(result) if result else None
 
 
-# Singleton
+
 user_service = UserService()

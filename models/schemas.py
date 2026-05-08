@@ -14,10 +14,6 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
-# ─────────────────────────────────────────────
-# Enums
-# ─────────────────────────────────────────────
-
 class Language(str, Enum):
     ENGLISH    = "en"
     HINDI      = "hi"
@@ -49,9 +45,7 @@ class Intent(str, Enum):
     ERROR          = "error"
 
 
-# ─────────────────────────────────────────────
-# Chat Schemas
-# ─────────────────────────────────────────────
+
 
 class ChatRequest(BaseModel):
     message:    str            = Field(..., min_length=1, max_length=2000)
@@ -76,23 +70,6 @@ class MessageOut(BaseModel):
     metadata:  dict[str, Any] = {}
 
 
-# ─────────────────────────────────────────────
-# Session Schemas
-# ─────────────────────────────────────────────
-
-class SessionOut(BaseModel):
-    session_id:   str
-    user_id:      str
-    language:     str
-    message_count: int
-    last_active:  datetime
-    created_at:   datetime
-
-
-# ─────────────────────────────────────────────
-# Appointment Schemas
-# ─────────────────────────────────────────────
-
 class AppointmentCreate(BaseModel):
     appointment_type: AppointmentType = AppointmentType.DOCTOR
     title:            str             = Field(..., min_length=1, max_length=200)
@@ -106,11 +83,11 @@ class AppointmentOut(BaseModel):
     user_id:          str
     appointment_type: AppointmentType
     title:            str
-    scheduled_at:     str                          # human-readable resolved datetime
+    scheduled_at:     str                         
     doctor_name:      str
     location:         str
     status:           AppointmentStatus
-    reference:        str                          # short booking reference code
+    reference:        str                          
     reminder_sent:    bool = False
     created_at:       datetime
 
@@ -119,10 +96,6 @@ class AppointmentCancel(BaseModel):
     appointment_id: str
 
 
-# ─────────────────────────────────────────────
-# Probable Condition Schema
-# ─────────────────────────────────────────────
-
 class ProbableCondition(BaseModel):
     name:           str
     confidence:     float = Field(..., ge=0.0, le=1.0)
@@ -130,9 +103,6 @@ class ProbableCondition(BaseModel):
     disclaimer:     str = "This is not a medical diagnosis. Please consult a doctor."
 
 
-# ─────────────────────────────────────────────
-# Health Check Schema
-# ─────────────────────────────────────────────
 
 class HealthCheck(BaseModel):
     status:                 str

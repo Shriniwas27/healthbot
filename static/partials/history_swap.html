@@ -1,0 +1,19 @@
+<div id="history-messages">
+{% for msg in messages %}
+    <div class="message-row {{ msg.role }}">
+        <div class="bubble {{ msg.role }}">
+            <div style="font-size:0.95rem;">{{ msg.content }}</div>
+            <div style="font-size:0.75rem; color:var(--muted); margin-top:0.25rem;">{{ msg.timestamp | default('') }}</div>
+        </div>
+    </div>
+{% endfor %}
+</div>
+
+<script>
+    (function(){
+        const hidden = document.querySelector('input[name="session_id"]');
+        if(hidden){ hidden.value = "{{ session_id }}"; }
+        // ensure scroll
+        if(typeof scrollToBottom === 'function') scrollToBottom();
+    })();
+</script>

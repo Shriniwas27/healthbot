@@ -10,16 +10,20 @@ Handles:
   POST /appointments    → create appointment via form
 """
 
-from fastapi import APIRouter, Request, Form, Depends
+from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-
+from models.appointment import AppointmentDocument
+from models.user import UserDocument
+from datetime import datetime, timezone
 from agents.orchestrator import orchestrator
 from session import session_service
 from services.appointment_service import AppointmentService
+from services.chat_service import chat_service
+from services.user_service import user_service
 from models.schemas import Language
 from utils.logger import get_logger
-
+from fastapi.responses import RedirectResponse
 logger = get_logger(__name__)
 router = APIRouter()
 templates = Jinja2Templates(directory="static")
@@ -42,36 +46,66 @@ def _get_language(request: Request) -> str:
 # ── Pages (SSR) ────────────────────────────────────────────
 
 @router.get("/", response_class=HTMLResponse)
-async def index(request: Request):
+async def index(request: Request, fresh: bool = False):
     user_id = _get_user_id(request)
     session_id = _get_session_id(request)
-    language = _get_language(request)
+    if user_id == "anonymous":
+   
+        return RedirectResponse(url="/login", status_code=302)
+    
+    if fresh:
+        session = await session_service.create_session(user_id)
+    else:
+        session = await session_service.get_or_create_session(
+            session_id, user_id
+        )
 
-    # Restore or create session
-    session = await session_service.get_or_create_session(
-        session_id, user_id, language
-    )
+    messages = await chat_service.get_chat_history(session.session_id)
 
-    # Fetch existing messages to hydrate the page on reload
-    messages = [m.to_dict() for m in session.messages[-30:]]
+    user = await user_service.get_by_id(user_id)
+    display_name = user.get("full_name") if user else ""
 
-    return templates.TemplateResponse(
+    resp = templates.TemplateResponse(
         request=request,
         name="index.html",
         context={
             "session_id": session.session_id,
             "user_id": user_id,
-            "language": language,
             "messages": messages,
             "active_session_count": session_service.active_session_count,
+            "display_name": display_name,
         },
     )
+    resp.set_cookie("session_id", session.session_id, httponly=True, samesite="lax")
+    return resp
+
+
+@router.get("/chats/load", response_class=HTMLResponse)
+async def load_chat(request: Request, session_id: str):
+    """Set `session_id` cookie and return the chat history to swap into the chat container."""
+    messages = await chat_service.get_chat_history(session_id)
+
+    resp = templates.TemplateResponse(
+        request=request,
+        name="partials/history_swap.html",
+        context={"messages": messages, "session_id": session_id},
+    )
+    resp.set_cookie("session_id", session_id, httponly=True, samesite="lax")
+    return resp
 
 
 @router.get("/appointments", response_class=HTMLResponse)
 async def appointments_page(request: Request):
     user_id = _get_user_id(request)
     appts = await appt_service.get_user_appointments(user_id)
+
+    if request.headers.get("HX-Request") or request.headers.get("hx-request"):
+        return templates.TemplateResponse(
+            request=request,
+            name="partials/appointments_list.html",
+            context={"appointments": appts, "user_id": user_id},
+        )
+
     return templates.TemplateResponse(
         request=request,
         name="appointments.html",
@@ -79,7 +113,6 @@ async def appointments_page(request: Request):
     )
 
 
-# ── Chat API (HTMX partials) ───────────────────────────────
 
 @router.post("/chat", response_class=HTMLResponse)
 async def chat(
@@ -87,7 +120,6 @@ async def chat(
     message: str = Form(...),
     session_id: str = Form(None),
     user_id: str = Form("anonymous"),
-    language: str = Form("en"),
 ):
     """
     Core chat endpoint.
@@ -105,7 +137,6 @@ async def chat(
             user_id=user_id,
             message=message,
             session_id=session_id or None,
-            language=language,
         )
     except Exception as e:
         logger.error(f"Orchestrator error: {e}")
@@ -139,16 +170,26 @@ async def chat_history(request: Request):
     session_id = _get_session_id(request)
     if not session_id:
         return HTMLResponse("")
-
-    session = await session_service.get_session(session_id)
-    if not session:
-        return HTMLResponse("")
-
-    messages = [m.to_dict() for m in session.messages]
+    messages = await chat_service.get_chat_history(session_id)
     return templates.TemplateResponse(
         request=request,
         name="partials/history.html",
         context={"messages": messages},
+    )
+
+
+@router.get("/chats", response_class=HTMLResponse)
+async def chats_list(request: Request):
+    """Return a partial listing of previous chats for the current user."""
+    user_id = _get_user_id(request)
+    if user_id == "anonymous":
+        return HTMLResponse("")
+
+    chats = await chat_service.get_user_chats(user_id)
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/chats_list.html",
+        context={"chats": chats},
     )
 
 
@@ -180,7 +221,6 @@ async def cancel_appointment(
     )
 
 
-# ── Twilio Webhook (reply CONFIRM/CANCEL via SMS) ──────────
 
 @router.post("/webhooks/twilio/reply")
 async def twilio_reply(
@@ -188,31 +228,52 @@ async def twilio_reply(
     From: str = Form(...),
     Body: str = Form(...),
 ):
-    """Handle CONFIRM/CANCEL SMS replies from users."""
     from db.mongo import get_database
     db = await get_database()
 
     body = Body.strip().upper()
-    phone = From.strip()
+    phone = From.strip().removeprefix("whatsapp:")
 
-    if body in ("CONFIRM", "CANCEL"):
-        status = "confirmed" if body == "CONFIRM" else "cancelled"
-        await db.appointments.update_many(
-            {
-                "status": "scheduled",
-                "reminder_sent": True,
-            },
-            {"$set": {"status": status}},
-        )
-        reply_msg = (
-            "Your appointment has been confirmed. See you soon!"
-            if status == "confirmed"
-            else "Your appointment has been cancelled. Stay healthy!"
-        )
-    else:
-        reply_msg = "Reply CONFIRM to confirm or CANCEL to cancel your appointment."
+    # Look up user by phone (stored in E.164 format, no prefix)
+    user = await db[UserDocument.COLLECTION].find_one({"phone": phone})
+    if not user:
+        logger.warning(f"Twilio webhook: no user found for phone {phone}")
+        twiml = "<?xml version='1.0'?><Response><Message>We couldn't find your account.</Message></Response>"
+        return HTMLResponse(content=twiml, media_type="application/xml")
 
-    # Return TwiML response
-    twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
-<Response><Message>{reply_msg}</Message></Response>"""
+    if body not in ("CONFIRM", "CANCEL"):
+        twiml = "<?xml version='1.0'?><Response><Message>Reply CONFIRM to confirm or CANCEL to cancel your appointment.</Message></Response>"
+        return HTMLResponse(content=twiml, media_type="application/xml")
+
+    status = "confirmed" if body == "CONFIRM" else "cancelled"
+
+    # Find the single most recent reminded appointment for this user
+    # (reminder_sent=True means reminder was just dispatched — most likely the one they're replying to)
+    appt = await db[AppointmentDocument.COLLECTION].find_one(
+        {
+            "user_id": user["user_id"],
+            "status": "scheduled",
+            "reminder_sent": True,
+        },
+        sort=[("scheduled_at", 1)],  # earliest upcoming = the one they're replying about
+    )
+
+    if not appt:
+        twiml = "<?xml version='1.0'?><Response><Message>No pending appointment found to update.</Message></Response>"
+        return HTMLResponse(content=twiml, media_type="application/xml")
+
+    await db[AppointmentDocument.COLLECTION].update_one(
+        {"appointment_id": appt["appointment_id"]},
+        {"$set": {
+            "status": status,
+            "updated_at": datetime.now(tz=timezone.utc),
+        }},
+    )
+
+    reply_msg = (
+        "Your appointment has been confirmed. See you soon!"
+        if status == "confirmed"
+        else "Your appointment has been cancelled. Stay healthy!"
+    )
+    twiml = f"<?xml version='1.0' encoding='UTF-8'?><Response><Message>{reply_msg}</Message></Response>"
     return HTMLResponse(content=twiml, media_type="application/xml")

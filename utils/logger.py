@@ -16,7 +16,6 @@ def get_logger(name: str) -> logging.Logger:
     """
     logger = logging.getLogger(name)
 
-    # Only add handler if none exist yet (avoids duplicate lines on reload)
     if not logger.handlers:
         handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(
@@ -28,5 +27,5 @@ def get_logger(name: str) -> logging.Logger:
         logger.addHandler(handler)
 
     logger.setLevel(logging.INFO)
-    logger.propagate = False   # prevent duplicate output from root logger
+    logger.propagate = False  
     return logger
