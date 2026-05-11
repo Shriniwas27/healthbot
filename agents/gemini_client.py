@@ -39,6 +39,7 @@ APP_NAME = "health_chatbot"
 # Agent Prompts
 # ──────────────────────────────────────────────────────────────────────────────
 
+# In INTENT_CLASSIFIER_PROMPT — make language field explicit in output:
 INTENT_CLASSIFIER_PROMPT = """
 You are an intent classifier for a health chatbot.
 Classify the user message into EXACTLY ONE of:
@@ -47,10 +48,10 @@ Classify the user message into EXACTLY ONE of:
   general_health  – general health information question
   off_topic       – NOT health related
 
-Also Detect the Langugae and Reply the User in Marathi
+Detect the language of the user message.
 
 REQUIRED OUTPUT FORMAT — respond ONLY with valid JSON, no extra text:
-{"intent": "<category>", "is_health_related": true_or_false}
+{"intent": "<category>", "is_health_related": true_or_false, "language": "<ISO 639-1 code e.g. en, hi, mr, es>"}
 """
 
 HEALTH_AGENT_PROMPT = """
@@ -86,9 +87,9 @@ REQUIRED OUTPUT FORMAT for diagnosis — respond ONLY with a JSON array:
 ]
 
 ── GENERAL RULES ────────────────────────────────────────────────────────────────
-Always respond in the English.
+Always respond in the Same Language.
 Be calm and empathetic — users may be anxious.
-Also Detect the Langugae and Reply the User in Marathi Strictly
+Also Detect the Langugae and Reply the User in in Same Language Strictly
 """
 
 SUMMARY_PROMPT = """
@@ -218,33 +219,62 @@ async def classify_intent(message: str) -> dict:
         return {"intent": "general_health", "is_health_related": True}
 
 
+# async def generate_response(
+#     context_messages: list[dict],
+#     user_message: str,
+    
+# ) -> str:
+#     """
+#     Multi-turn general health response using the unified health_agent.
+#     context_messages: list of {"role": "user"|"model", "parts": [{"text": "..."}]}
+#     """
+#     history_text = _build_history_text(context_messages)
+#     prompt = (
+#         "[MODE: general_health]\n"
+#         f"[Conversation history]\n{history_text}\n\n"
+#         f"User: {user_message}"
+#     )
+#     return await _run_agent(health_agent_llm, prompt)
+
 async def generate_response(
     context_messages: list[dict],
     user_message: str,
-    
+    language: str = "en",          
 ) -> str:
-    """
-    Multi-turn general health response using the unified health_agent.
-    context_messages: list of {"role": "user"|"model", "parts": [{"text": "..."}]}
-    """
     history_text = _build_history_text(context_messages)
     prompt = (
+        f"[LANGUAGE: Always respond in language code '{language}'. Do NOT switch languages.]\n"
         "[MODE: general_health]\n"
         f"[Conversation history]\n{history_text}\n\n"
         f"User: {user_message}"
     )
     return await _run_agent(health_agent_llm, prompt)
 
+# async def generate_follow_up_questions(
+#     symptoms: list[str],
+#     stage: int = 0,
+# ) -> list[str]:
+#     """
+#     Returns 2 follow-up questions for the given triage stage.
+#     Uses health_agent in symptom_collection mode — no separate agent needed.
+#     """
+#     prompt = (
+#         f"[MODE: symptom_collection, STAGE: {stage}]\n"
+#         f"Patient reported symptoms: {', '.join(symptoms)}."
+#     )
+#     try:
+#         raw = await _run_agent(health_agent_llm, prompt)
+#         return _parse_json(raw)
+#     except Exception:
+#         return []
 
 async def generate_follow_up_questions(
     symptoms: list[str],
     stage: int = 0,
+    language: str = "en",          # ← ADD THIS
 ) -> list[str]:
-    """
-    Returns 2 follow-up questions for the given triage stage.
-    Uses health_agent in symptom_collection mode — no separate agent needed.
-    """
     prompt = (
+        f"[LANGUAGE: Always respond in language code '{language}'. Do NOT switch languages.]\n"
         f"[MODE: symptom_collection, STAGE: {stage}]\n"
         f"Patient reported symptoms: {', '.join(symptoms)}."
     )
@@ -253,18 +283,36 @@ async def generate_follow_up_questions(
         return _parse_json(raw)
     except Exception:
         return []
-
+    
+# async def analyse_probable_conditions(
+#     symptoms: list[str],
+#     follow_up_answers: dict,
+#     user_profile: dict,
+# ) -> list[dict]:
+#     """
+#     Returns top-3 probable conditions with confidence scores.
+#     Uses health_agent in diagnosis mode — no separate agent needed.
+#     """
+#     prompt = (
+#         "[MODE: diagnosis]\n"
+#         f"Patient profile: {json.dumps(user_profile)}\n"
+#         f"Reported symptoms: {', '.join(symptoms)}\n"
+#         f"Follow-up answers: {json.dumps(follow_up_answers)}"
+#     )
+#     try:
+#         raw = await _run_agent(health_agent_llm, prompt)
+#         return _parse_json(raw)
+#     except Exception:
+#         return []
 
 async def analyse_probable_conditions(
     symptoms: list[str],
     follow_up_answers: dict,
     user_profile: dict,
+    language: str = "en",          # ← ADD THIS
 ) -> list[dict]:
-    """
-    Returns top-3 probable conditions with confidence scores.
-    Uses health_agent in diagnosis mode — no separate agent needed.
-    """
     prompt = (
+        f"[LANGUAGE: Always respond in language code '{language}'. Do NOT switch languages.]\n"
         "[MODE: diagnosis]\n"
         f"Patient profile: {json.dumps(user_profile)}\n"
         f"Reported symptoms: {', '.join(symptoms)}\n"
@@ -275,8 +323,6 @@ async def analyse_probable_conditions(
         return _parse_json(raw)
     except Exception:
         return []
-
-
 async def generate_summary(transcript: str) -> str:
     """
     Generate a rolling summary for MongoDB persistence.

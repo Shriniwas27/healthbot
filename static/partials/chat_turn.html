@@ -1,25 +1,41 @@
 <!-- User message bubble -->
 <div class="message-row user">
-    <div class="bubble user">{{ user_message }}</div>
+    <div class="bubble user">
+        <div>{{ user_message }}</div>
+        <div style="font-size:0.72rem; color:var(--muted); margin-top:0.35rem; text-align:right;">{{ timestamp }}</div>
+    </div>
 </div>
 
 <div class="message-row assistant">
     <div class="bubble assistant">
         {{ reply | replace('\n', '<br>') | safe }}
 
+        <div style="font-size:0.72rem; color:var(--muted); margin-top:0.5rem;">{{ timestamp }}</div>
+
         {% if follow_up_questions %}
-            <div style="margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem;">
-                {% for q in follow_up_questions %}
-                    <button class="quick-reply btn" style="background: var(--bg-secondary); color: var(--primary); padding: 0.5rem 1rem; border-radius: 20px; border: none; font-size: 0.9rem; cursor: pointer; transition: var(--transition);">{{ q }}</button>
-                {% endfor %}
-            </div>
+            {# avoid rendering duplicate buttons if the reply text already contains the same questions #}
+            {% set _dup = false %}
+            {% for q in follow_up_questions %}
+                {% if q in reply %}
+                    {% set _dup = true %}
+                {% endif %}
+            {% endfor %}
+            {% if not _dup %}
+                <div style="margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                    {% for q in follow_up_questions %}
+                        <button class="quick-reply btn" style="background: var(--bg-secondary); color: var(--primary); padding: 0.5rem 1rem; border-radius: 20px; border: none; font-size: 0.9rem; cursor: pointer; transition: var(--transition);">{{ q }}</button>
+                    {% endfor %}
+                </div>
+            {% endif %}
         {% endif %}
 
         {% if probable_conditions %}
             <div style="margin-top: 1rem; background: rgba(16,185,129,0.1); border: 1px solid var(--success); border-radius: 12px; padding: 1rem; font-size: 0.95rem;">
                 <strong style="color: var(--success);">Possible conditions:</strong><br/>
                 {% for c in probable_conditions %}
-                    • {{ c.name }} ({{ (c.confidence * 100)|int }}%) – {{ c.recommendation }}<br/>
+                    {% if c.name is defined and c.confidence is defined %}
+                        • {{ c.name }} ({{ (c.confidence * 100)|int }}%) – {{ c.recommendation }}<br/>
+                    {% endif %}
                 {% endfor %}
             </div>
         {% endif %}

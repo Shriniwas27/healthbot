@@ -148,7 +148,9 @@ async def chat(
             "probable_conditions": [],
             "appointment_created": None,
         }
-
+    # attach a timestamp for this exchange so the UI can render it
+    from datetime import datetime, timezone as _tz
+    ts = datetime.now(_tz.utc).astimezone().strftime("%Y-%m-%d %H:%M")
     return templates.TemplateResponse(
         request=request,
         name="partials/chat_turn.html",
@@ -160,6 +162,7 @@ async def chat(
             "follow_up_questions": result.get("follow_up_questions", []),
             "probable_conditions": result.get("probable_conditions", []),
             "appointment_created": result.get("appointment_created"),
+            "timestamp": ts,
         },
     )
 

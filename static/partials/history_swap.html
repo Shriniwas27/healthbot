@@ -11,9 +11,21 @@
 
 <script>
     (function(){
-        const hidden = document.querySelector('input[name="session_id"]');
-        if(hidden){ hidden.value = "{{ session_id }}"; }
-        // ensure scroll
-        if(typeof scrollToBottom === 'function') scrollToBottom();
+        // update the hidden session input (use id if present)
+        const sidInput = document.getElementById('session_id') || document.querySelector('input[name="session_id"]');
+        if (sidInput) { sidInput.value = "{{ session_id }}"; }
+
+        // show chat view (in case this partial was loaded via HTMX into the #chat-container)
+        if (typeof showChat === 'function') {
+            showChat();
+        } else if (typeof scrollToBottom === 'function') {
+            // fallback: ensure we at least scroll
+            scrollToBottom();
+        }
+
+        // highlight the active chat in history sidebar
+        if (typeof highlightActiveChat === 'function') {
+            highlightActiveChat();
+        }
     })();
 </script>

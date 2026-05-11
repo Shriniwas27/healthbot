@@ -307,6 +307,7 @@
             cursor: pointer;
         }
         .chat-history-item:hover { background: var(--sidebar-hover); color: var(--sidebar-text-hi); }
+        .chat-history-item.active { background: var(--sidebar-active); color: var(--sidebar-text-hi); font-weight: 600; }
 
         /* User profile */
         .sidebar-user {
@@ -828,7 +829,9 @@
             <span class="nav-item-label">History</span>
         </a>
 
-        <div id="chat-history-list" style="margin-top: 0.5rem;"></div>
+           <div id="chat-history-list" style="margin-top: 0.5rem;"
+               hx-get="/chats" hx-target="#chat-history-list" hx-trigger="load">
+           </div>
 
     </nav>
 
@@ -1096,6 +1099,9 @@
 
             const sidMatch = html.match(/data-session-id="([^"]+)"/);
             if (sidMatch) document.getElementById('session_id').value = sidMatch[1];
+            
+            // highlight the active chat in history
+            highlightActiveChat();
 
         } catch(err) {
             typing.remove();
@@ -1138,6 +1144,19 @@
         c.scrollTop = c.scrollHeight;
     }
 
+    function highlightActiveChat() {
+        const currentSessionId = document.getElementById('session_id').value;
+        // remove active class from all chat items
+        document.querySelectorAll('.chat-history-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        // add active class to the current chat
+        const activeChat = document.querySelector(`[data-session-id="${currentSessionId}"]`);
+        if (activeChat) {
+            activeChat.classList.add('active');
+        }
+    }
+
     async function endChat() {
         const session_id = document.getElementById('session_id').value;
         const form = new FormData();
@@ -1151,12 +1170,20 @@
         if (messages.length > 0) {
             showChat();
         }
+        highlightActiveChat();
         document.addEventListener('keydown', e => {
             if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
                 e.preventDefault();
                 startNewChat();
             }
         });
+    });
+    
+    // highlight active chat when history is loaded via HTMX
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+        if (evt.detail.target.id === 'chat-history-list') {
+            highlightActiveChat();
+        }
     });
 </script>
 
